@@ -1,16 +1,35 @@
 # Getting Started
 
-### Initial Setting
+### Reference Documentation
 
-- Project Name : FishTankProject
-- package Name : com.iotbigdata.fishtankproject
-- JDK : 17
-- Dependencies
-  - Spring Web : REST API 제작
-  - Spring data JPA : DB 관리
-  - MySQL Driver : JPA와 DB 통신용 JDBC 드라이버
-  - Lombok : `@Getter`, `@Setter` 등 코드 간결화
-  - Validation : 클라이언트 요청 유효성 검사
-  - Spring Boot DevTools : 자동 리스타트
-  - Spring Security : 로그인 및 JWT 토큰 인증 보안 구현
-- 
+For further reference, please consider the following sections:
+
+* [Official Gradle documentation](https://docs.gradle.org)
+* [Spring Boot Gradle Plugin Reference Guide](https://docs.spring.io/spring-boot/3.5.6/gradle-plugin)
+* [Create an OCI image](https://docs.spring.io/spring-boot/3.5.6/gradle-plugin/packaging-oci-image.html)
+* [Spring Data JPA](https://docs.spring.io/spring-boot/3.5.6/reference/data/sql.html#data.sql.jpa-and-spring-data)
+* [Spring Boot DevTools](https://docs.spring.io/spring-boot/3.5.6/reference/using/devtools.html)
+* [Spring Security](https://docs.spring.io/spring-boot/3.5.6/reference/web/spring-security.html)
+* [Validation](https://docs.spring.io/spring-boot/3.5.6/reference/io/validation.html)
+* [Spring Web](https://docs.spring.io/spring-boot/3.5.6/reference/web/servlet.html)
+
+### Guides
+
+The following guides illustrate how to use some features concretely:
+
+* [Accessing Data with JPA](https://spring.io/guides/gs/accessing-data-jpa/)
+* [Accessing data with MySQL](https://spring.io/guides/gs/accessing-data-mysql/)
+* [Securing a Web Application](https://spring.io/guides/gs/securing-web/)
+* [Spring Boot and OAuth2](https://spring.io/guides/tutorials/spring-boot-oauth2/)
+* [Authenticating a User with LDAP](https://spring.io/guides/gs/authenticating-ldap/)
+* [Validation](https://spring.io/guides/gs/validating-form-input/)
+* [Building a RESTful Web Service](https://spring.io/guides/gs/rest-service/)
+* [Serving Web Content with Spring MVC](https://spring.io/guides/gs/serving-web-content/)
+* [Building REST services with Spring](https://spring.io/guides/tutorials/rest/)
+
+### Additional Links
+
+These additional references should also help you:
+
+* [Gradle Build Scans – insights for your project's build](https://scans.gradle.com#gradle)
+
