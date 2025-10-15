@@ -6,6 +6,7 @@ Flutter
 ## Spring Boot
 - Project Name : FishTankProject
 - package Name : com.iotbigdata.fishtankproject
+- Spring Boot Version : 3.5.6
 - JDK : 17
 - Dependencies
   - Spring Web : REST API 제작
