@@ -1,6 +1,7 @@
 package com.iotbigdata.fishtankproject.controller;
 
 import com.iotbigdata.fishtankproject.domain.User;
+import com.iotbigdata.fishtankproject.domain.UserRegisterDto;
 import com.iotbigdata.fishtankproject.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +18,12 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
-    // JSON -> Java 객체로 자동 변환됨
-    public ResponseEntity<?> register(@Valid @RequestBody User user, BindingResult result) {
+    public synchronized ResponseEntity<?> register(@Valid @RequestBody UserRegisterDto dto, BindingResult result) {
         if (result.hasErrors()) {
             return ResponseEntity.badRequest().body(result.getAllErrors());
         }
-
         try {
+            User user = dto.toEntity();
             User savedUser = userService.register(user);
             return ResponseEntity.ok(savedUser);
         } catch (IllegalArgumentException e) {
