@@ -16,3 +16,14 @@ Flutter
   - Validation : 클라이언트 요청 유효성 검사
   - Spring Boot DevTools : 자동 리스타트
   - Spring Security : 로그인 및 JWT 토큰 인증 보안 구현
+
+## Memo
+(회원가입 기능)
+1. 아이디 중복 검사 로직
+2. 비번 확인 로직
+exception 처리를 통해 안전하게 앱에 message 전달 해야 함
+
+## DB
+user 테이블에 fish_type 컬럼 추가
+fish 테이블 생성
+fish_type(PK), 적합 온도, TDS(수질), 적합 용존산소
