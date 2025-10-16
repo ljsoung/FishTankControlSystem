@@ -31,3 +31,4 @@ exception 처리를 통해 안전하게 앱에 message 전달 해야 함
 user 테이블에 fish_type 컬럼 추가
 fish 테이블 생성
 fish_type(PK), 적합 온도, TDS(수질), 적합 용존산소
+센서 측정 간격 1시간, 데이터 확인 시 시간 -> 1시간, 하루, 일주일(평균 내기)
