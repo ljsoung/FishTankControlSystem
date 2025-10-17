@@ -18,6 +18,9 @@ public class User {
 
     private String name;
 
+    private String fish_type;
+
     @Enumerated(EnumType.STRING)
     private Role role;
+
 }
