@@ -21,12 +21,6 @@ Flutter
 
 # Todo List
 
-## Sign In
-(회원가입 기능)
-1. 아이디 중복 검사 로직
-2. 비번 확인 로직
-exception 처리를 통해 안전하게 앱에 message 전달 해야 함
-
 ## DB
 1. user 테이블에 fish_type 컬럼 추가
 2. fish 테이블 생성
