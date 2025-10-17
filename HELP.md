@@ -20,6 +20,10 @@ Flutter
 ---
 
 # Todo List
+## Security
+1. User 클래스 Rename 필요 -> 추후 로그인 구현 시 UserDetailsService 인터페이스 사용할 때 클래스 이름이 겹침
+2. UserSecurityService 서비스 생성 필요 -> 여기서 로그인 구현 -> SecurityConfig 수정 필요(AuthenticationManager 빈 생성)
+3. 
 
 ## DB
 1. user 테이블에 fish_type 컬럼 추가
