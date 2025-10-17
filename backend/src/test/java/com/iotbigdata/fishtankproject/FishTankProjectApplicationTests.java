@@ -2,8 +2,8 @@ package com.iotbigdata.fishtankproject;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.iotbigdata.fishtankproject.domain.User;
-import com.iotbigdata.fishtankproject.repository.UserRepository;
+import com.iotbigdata.fishtankproject.user.domain.User;
+import com.iotbigdata.fishtankproject.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +11,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -44,17 +47,23 @@ class FishTankProjectApplicationTests {
     @Test
     @DisplayName("회원가입 API - 정상 등록 시 200 OK 반환 및 DB 저장 확인")
     void registerUserSuccess2() throws Exception {
-        User user = new User();
-        user.setId("testUser123");
-        user.setPassword("testPassword1234!!");
-        user.setName("테스트유저");
+        String uniqueId = "testId" + System.currentTimeMillis();
 
+        // given: 요청용 DTO 생성
+        Map<String, Object> userRegisterDto = new HashMap<>();
+        userRegisterDto.put("id", uniqueId);
+        userRegisterDto.put("password", "testPassword1234!!");
+        userRegisterDto.put("confirmPassword", "testPassword1234!!"); // 비밀번호 확인
+        userRegisterDto.put("name", "테스트유저");
+
+        // when & then
         mockMvc.perform(post("/api/user/register")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(user)))
+                        .content(objectMapper.writeValueAsString(userRegisterDto)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value("testUser123"))
+                .andExpect(jsonPath("$.id").value(uniqueId))
                 .andExpect(jsonPath("$.name").value("테스트유저"));
     }
+
 }
