@@ -1,6 +1,6 @@
 package com.iotbigdata.fishtankproject.validator;
 
-import com.iotbigdata.fishtankproject.domain.UserRegisterDto;
+import com.iotbigdata.fishtankproject.dto.UserRegisterDto;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import org.springframework.stereotype.Component;

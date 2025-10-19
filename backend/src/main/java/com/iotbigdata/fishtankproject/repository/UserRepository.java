@@ -1,7 +1,10 @@
 package com.iotbigdata.fishtankproject.repository;
 
-import com.iotbigdata.fishtankproject.domain.User;
+import com.iotbigdata.fishtankproject.domain.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserRepository extends JpaRepository<User, String> {
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<AppUser, String> {
+    Optional<AppUser> findById(String username);
 }

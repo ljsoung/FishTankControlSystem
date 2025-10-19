@@ -17,6 +17,6 @@ public class UniqueUserIdValidator implements ConstraintValidator<UniqueUserId, 
         if (id == null || id.isBlank()){
             return false; //default Message 리턴됨
         }
-        return !userRepository.existsById(id); // 존재하면 false
+        return !userRepository.existsById(id);// 존재하면 false
     }
 }
