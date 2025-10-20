@@ -420,7 +420,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   // 어항 이미지
                   Image.asset(
                     'assets/fish_tank.png',
-                    height: 350,
+                    height: 400,
                     fit: BoxFit.contain,
                   ),
                 ],
@@ -534,7 +534,7 @@ class ChangePasswordPage extends StatelessWidget{
                   // 어항 이미지
                   Image.asset(
                     'assets/fish_tank.png',
-                    height: 350,
+                    height: 400,
                     fit: BoxFit.contain,
                   ),
                 ],
@@ -645,7 +645,7 @@ class InsertChangePasswordPage extends StatelessWidget{
                   // 어항 이미지
                   Image.asset(
                     'assets/fish_tank.png',
-                    height: 350,
+                    height: 400,
                     fit: BoxFit.contain,
                   ),
                 ],
