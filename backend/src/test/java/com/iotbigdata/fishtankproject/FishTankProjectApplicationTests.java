@@ -3,6 +3,8 @@ package com.iotbigdata.fishtankproject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iotbigdata.fishtankproject.domain.AppUser;
+import com.iotbigdata.fishtankproject.dto.UserLoginDto;
+import com.iotbigdata.fishtankproject.dto.UserRegisterDto;
 import com.iotbigdata.fishtankproject.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -66,4 +69,38 @@ class FishTankProjectApplicationTests {
                 .andExpect(jsonPath("$.name").value("테스트유저"));
     }
 
+    @Test
+    @DisplayName("회원가입 후 로그인 테스트")
+    void registerAndLoginTest() throws Exception {
+        // 회원가입 요청 DTO
+        UserRegisterDto registerDto = new UserRegisterDto();
+        registerDto.setId("testUser");
+        registerDto.setPassword("testPass1234!!");
+        registerDto.setConfirmPassword("testPass1234!!");
+        registerDto.setName("테스트유저");
+
+        // 회원가입 요청 (POST /api/user/register)
+        mockMvc.perform(post("/api/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(registerDto)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("회원가입 완료"));
+
+        // 로그인 요청 DTO
+        UserLoginDto loginDto = new UserLoginDto();
+        loginDto.setId("testUser");
+        loginDto.setPassword("testPass1234!!");
+
+        // 로그인 요청 (POST /api/user/login)
+        ResultActions result = mockMvc.perform(post("/api/user/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginDto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("로그인 성공"))
+                .andExpect(jsonPath("$.token").exists()); // JWT 토큰 존재 확인
+
+        // 응답 출력 (디버깅용)
+        String response = result.andReturn().getResponse().getContentAsString();
+        System.out.println("로그인 응답: " + response);
+    }
 }
