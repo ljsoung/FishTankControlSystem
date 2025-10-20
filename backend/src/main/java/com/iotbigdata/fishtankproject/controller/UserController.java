@@ -99,17 +99,4 @@ public class UserController {
             return ResponseEntity.badRequest().body(Map.of("message", "아이디 또는 비밀번호가 올바르지 않습니다."));
         }
     }
-
-    @PatchMapping("/fish_type")
-    public ResponseEntity<?> updateMyFishType(@RequestBody Map<String, String> body,
-                                              Authentication authentication) {
-        String fishType = body.get("fishType");
-        if (fishType == null || fishType.isBlank()) {
-            return ResponseEntity.badRequest().body("fishType 은 비어있을 수 없습니다.");
-        }
-        // 토큰 subject = 사용자 ID (authentication.getName())
-        String userId = authentication.getName();
-        userService.updateFishType(userId, fishType);
-        return ResponseEntity.ok(Map.of("message", "fishType 업데이트 완료", "fishType", fishType));
-    }
 }
