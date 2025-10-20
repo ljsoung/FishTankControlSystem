@@ -18,6 +18,8 @@ public class AppUser {
 
     private String name;
 
+    private String fish_type;
+
     /*
     // fish_type 테이블 완성 후 추가
     @ManyToOne(fetch = FetchType.LAZY)

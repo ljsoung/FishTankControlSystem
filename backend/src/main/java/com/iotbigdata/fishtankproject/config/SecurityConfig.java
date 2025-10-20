@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/user/register", "/api/user/login").permitAll()
                         .anyRequest().authenticated()
+                        .requestMatchers("/api/user/fish-type").authenticated()
                 )
 
                 // 폼 로그인, HTTP 기본 로그인 비활성화

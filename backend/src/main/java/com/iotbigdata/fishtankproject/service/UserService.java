@@ -48,4 +48,12 @@ public class UserService implements UserDetailsService {
         authorities.add(new SimpleGrantedAuthority("ROLE_" + appUser.getRole().name()));
         return new User(appUser.getId(), appUser.getPassword(), authorities);
     }
+
+    @Transactional
+    public void updateFishType(String userId, String fishType) {
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+        user.setFishType(fishType);
+        // JPA 변경감지로 자동 업데이트
+    }
 }
