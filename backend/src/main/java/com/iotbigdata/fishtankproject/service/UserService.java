@@ -41,11 +41,18 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String id) throws UsernameNotFoundException {
         Optional<AppUser> _appUser = this.userRepository.findById(id);
         if (_appUser.isEmpty()) {
-            throw new UsernameNotFoundException("사용자를 찾을수 없습니다.");
+            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
         }
         AppUser appUser = _appUser.get();
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority("ROLE_" + appUser.getRole().name()));
         return new User(appUser.getId(), appUser.getPassword(), authorities);
+    }
+
+    public AppUser resetPassword(AppUser user) {
+        String encodedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(encodedPassword);
+
+        return userRepository.save(user);
     }
 }

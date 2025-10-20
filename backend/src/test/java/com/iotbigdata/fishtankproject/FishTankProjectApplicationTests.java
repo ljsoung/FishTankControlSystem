@@ -3,6 +3,7 @@ package com.iotbigdata.fishtankproject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iotbigdata.fishtankproject.domain.AppUser;
+import com.iotbigdata.fishtankproject.domain.Role;
 import com.iotbigdata.fishtankproject.dto.UserLoginDto;
 import com.iotbigdata.fishtankproject.dto.UserRegisterDto;
 import com.iotbigdata.fishtankproject.repository.UserRepository;
@@ -44,6 +45,7 @@ class FishTankProjectApplicationTests {
         user.setId("testId1234");
         user.setPassword("testPassword1234!!");
         user.setName("testName");
+        user.setRole(Role.CUSTOMER);
         userRepository.save(user);
     }
 

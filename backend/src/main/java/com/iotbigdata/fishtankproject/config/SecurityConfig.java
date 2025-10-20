@@ -24,12 +24,12 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/user/register", "/api/user/login").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers("/", "/api/user/login", "/api/user/register").permitAll() // 공개 경로
+                        .anyRequest().authenticated() // 나머지는 인증 필요
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
-                // ✅ JwtAuthenticationFilter를 직접 생성해서 주입
+                // JwtAuthenticationFilter를 직접 생성해서 주입
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userService),
                         UsernamePasswordAuthenticationFilter.class);
 
