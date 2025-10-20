@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
 void main() {
@@ -30,6 +32,47 @@ class FishTankLogin extends StatefulWidget {
 class _FishTankLoginState extends State<FishTankLogin> {
   bool _isChecked = false; // 체크박스 상태 저장 변수
 
+  final TextEditingController _idController = TextEditingController();
+  final TextEditingController _pwController = TextEditingController();
+
+  Future<void> _login() async {
+    final String id = _idController.text;
+    final String password = _pwController.text;
+
+    try {
+      // Spring Boot API 주소
+      final url = Uri.parse("http://10.0.2.2:8080/api/user/login");
+
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"id": id, "password": password}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final token = data["token"];
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("로그인 성공")),
+        );
+
+        print("JWT TOKEN: $token");
+
+        // 다음 화면으로 이동 예시
+        // Navigator.push(context, MaterialPageRoute(builder: (_) => const DashboardPage()));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("로그인 실패: ${response.body}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("서버 연결 실패: $e")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,7 +104,8 @@ class _FishTankLoginState extends State<FishTankLogin> {
                   const SizedBox(height: 40),
 
                   // 아이디
-                  const TextField(
+                  TextField(
+                    controller: _idController,
                     decoration: InputDecoration(
                       labelText: '아이디',
                       border: OutlineInputBorder(),
@@ -72,22 +116,11 @@ class _FishTankLoginState extends State<FishTankLogin> {
                   const SizedBox(height: 20),
 
                   // 비밀번호
-                  const TextField(
+                  TextField(
+                    controller: _pwController,
                     obscureText: true,
                     decoration: InputDecoration(
                       labelText: '비밀번호',
-                      border: OutlineInputBorder(),
-                      fillColor: Colors.white,
-                      filled: true,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 비밀번호 확인
-                  const TextField(
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: '비밀번호 확인',
                       border: OutlineInputBorder(),
                       fillColor: Colors.white,
                       filled: true,
@@ -177,9 +210,7 @@ class _FishTankLoginState extends State<FishTankLogin> {
                           ),
                           elevation: 2,
                         ),
-                        onPressed: () {
-                          // 로그인 로직
-                        },
+                        onPressed: _login,
                         child: const Text('로그인'),
                       ),
                     ],
@@ -206,8 +237,70 @@ class _FishTankLoginState extends State<FishTankLogin> {
 
 
 // 회원가입 화면
-class SignUpPage extends StatelessWidget{
+class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
+
+  @override
+  State<SignUpPage> createState() => _SignUpPageState();
+}
+
+class _SignUpPageState extends State<SignUpPage> {
+  final TextEditingController _idController = TextEditingController();
+  final TextEditingController _pwController = TextEditingController();
+  final TextEditingController _pwCheckController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+
+  Future<void> _register() async {
+    final id = _idController.text.trim();
+    final pw = _pwController.text.trim();
+    final pwCheck = _pwCheckController.text.trim();
+    final name = _nameController.text.trim();
+
+    if (id.isEmpty || pw.isEmpty || name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('모든 항목을 입력해주세요.')),
+      );
+      return;
+    }
+
+    if (pw != pwCheck) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('비밀번호가 일치하지 않습니다.')),
+      );
+      return;
+    }
+
+    try {
+      // Spring Boot API 주소
+      final url = Uri.parse("http://10.0.2.2:8080/api/user/register");
+
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "id": id,
+          "password": pw,
+          "confirmPassword": pwCheck,
+          "name": name,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('회원가입 성공! 로그인 화면으로 이동합니다.')),
+        );
+        Navigator.pop(context); // 로그인 화면으로 돌아가기
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('회원가입 실패: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('서버 연결 실패: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -237,8 +330,9 @@ class SignUpPage extends StatelessWidget{
                   const SizedBox(height: 30),
 
                   // ID
-                  const TextField(
-                    decoration: InputDecoration(
+                  TextField(
+                    controller: _idController,
+                    decoration: const InputDecoration(
                       labelText: 'ID',
                       border: OutlineInputBorder(),
                       fillColor: Colors.white,
@@ -248,9 +342,10 @@ class SignUpPage extends StatelessWidget{
                   const SizedBox(height: 20),
 
                   // 비밀번호
-                  const TextField(
+                  TextField(
+                    controller: _pwController,
                     obscureText: true,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: '비밀번호',
                       border: OutlineInputBorder(),
                       fillColor: Colors.white,
@@ -260,9 +355,10 @@ class SignUpPage extends StatelessWidget{
                   const SizedBox(height: 20),
 
                   // 비밀번호 확인
-                  const TextField(
+                  TextField(
+                    controller: _pwCheckController,
                     obscureText: true,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: '비밀번호 확인',
                       border: OutlineInputBorder(),
                       fillColor: Colors.white,
@@ -270,10 +366,10 @@ class SignUpPage extends StatelessWidget{
                     ),
                   ),
                   const SizedBox(height: 20),
-
                   // 이름
-                  const TextField(
-                    decoration: InputDecoration(
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
                       labelText: '이름',
                       border: OutlineInputBorder(),
                       fillColor: Colors.white,
@@ -311,9 +407,7 @@ class SignUpPage extends StatelessWidget{
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
-                          // 확인 로직
-                        },
+                        onPressed: _register,
                         child: const Text('확인'),
                       ),
                     ],
