@@ -41,7 +41,7 @@ class _FishTankLoginState extends State<FishTankLogin> {
 
     try {
       // Spring Boot API 주소
-      final url = Uri.parse("http://10.0.2.2:8080/api/user/login");
+      final url = Uri.parse("http://192.168.34.17:8080/api/user/login");
 
       final response = await http.post(
         url,
@@ -177,6 +177,8 @@ class _FishTankLoginState extends State<FishTankLogin> {
                         },
                         child: const Text('회원가입'),
                       ),
+                      
+                      // 비밀번호 변경
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
@@ -193,10 +195,10 @@ class _FishTankLoginState extends State<FishTankLogin> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const FindPasswordPage()),
+                                builder: (context) => const ChangePasswordPage()),
                           );
                         },
-                        child: const Text('비밀번호 찾기'),
+                        child: const Text('비밀번호 변경'),
                       ),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
@@ -272,7 +274,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     try {
       // Spring Boot API 주소
-      final url = Uri.parse("http://10.0.2.2:8080/api/user/register");
+      final url = Uri.parse("http://192.168.34.17:8080/api/user/register");
 
       final response = await http.post(
         url,
@@ -431,11 +433,9 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 }
 
-
-
-// 비밀번호 찾기 화면
-class FindPasswordPage extends StatelessWidget{
-  const FindPasswordPage({super.key});
+// 비밀번호 변경
+class ChangePasswordPage extends StatelessWidget{
+  const ChangePasswordPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -459,7 +459,7 @@ class FindPasswordPage extends StatelessWidget{
               child: Column(
                 children: [
                   const Text(
-                    '비밀번호 찾기',
+                    '비밀번호 변경',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                   const SizedBox(height: 30),
@@ -486,6 +486,122 @@ class FindPasswordPage extends StatelessWidget{
                     ),
                   ),
                   const SizedBox(height: 30),
+                  
+
+                  // 버튼 2개
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white, // 버튼 배경 흰색
+                          foregroundColor: Colors.black, // 글자색 (파란색)
+                          side: BorderSide(color: Colors.black), // 테두리도 파란색
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12), // 모서리 둥글게
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.pop(context); // 되돌아가기
+                        },
+                        child: const Text('되돌아가기'),
+                      ),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          side: BorderSide(color: Colors.black),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const InsertChangePasswordPage()),
+                          );
+                        },
+                        child: const Text('확인'),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // 어항 이미지
+                  Image.asset(
+                    'assets/fish_tank.png',
+                    height: 350,
+                    fit: BoxFit.contain,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+// 변경할 비밀번호 입력
+class InsertChangePasswordPage extends StatelessWidget{
+  const InsertChangePasswordPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF00BCD4), // 청록색
+              Color(0xFF2196F3), // 밝은 파랑
+              Color(0xFF006064), // 어두운 민트 블루
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 30),
+              child: Column(
+                children: [
+                  const Text(
+                    '비밀번호 변경',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // ID
+                  const TextField(
+                    decoration: InputDecoration(
+                      labelText: '변경할 비밀번호',
+                      border: OutlineInputBorder(),
+                      fillColor: Colors.white,
+                      filled: true,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+
+                  // 이름
+                  const TextField(
+                    decoration: InputDecoration(
+                      labelText: '변경할 비밀번호 확인',
+                      border: OutlineInputBorder(),
+                      fillColor: Colors.white,
+                      filled: true,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
 
                   // 버튼 2개
                   Row(
@@ -519,7 +635,7 @@ class FindPasswordPage extends StatelessWidget{
                         onPressed: () {
                           // 확인 로직
                         },
-                        child: const Text('비밀번호 찾기'),
+                        child: const Text('비밀번호 변경'),
                       ),
                     ],
                   ),
