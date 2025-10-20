@@ -7,7 +7,7 @@ Flutter
 - Project Name : FishTankProject
 - package Name : com.iotbigdata.fishtankproject
 - Spring Boot Version : 3.5.6
-- JDK : 17
+- JDK : 17.0.2
 - Dependencies
   - Spring Web : REST API 제작
   - Spring data JPA : DB 관리
@@ -20,13 +20,11 @@ Flutter
 ---
 
 # Todo List
-## Security
-1. User 클래스 Rename 필요 -> 추후 로그인 구현 시 UserDetailsService 인터페이스 사용할 때 클래스 이름이 겹침
-2. UserSecurityService 서비스 생성 필요 -> 여기서 로그인 구현 -> SecurityConfig 수정 필요(AuthenticationManager 빈 생성)
-3. 
-
-## DB
-1. user 테이블에 fish_type 컬럼 추가
-2. fish 테이블 생성
-2-2. fish_type(PK), 적합 온도, TDS(수질), 적합 용존산소
-3. 센서 측정 간격 1시간, 데이터 확인 시 시간 -> 1시간, 하루, 일주일(평균 내기)
+1. fish 테이블 생성
+1-2. fish_type(PK), user_id(FK), 적합 온도, TDS(수질), 적합 용존산소
+2. user 테이블에 fish_type 컬럼 추가
+3. water_quality, water_temperature, dissolved_oxygen 테이블 생성
+3-2. number(PK), user_id(FK), sensor_value, measured_at
+4. 센서 측정 간격 1시간, 데이터 확인 시 시간 -> 1시간, 하루, 일주일(평균 내기)
+4-2. 1시간으로 delay 걸어서 자동으로 주기마다 값이 들어올 수 있게 설정
+4-3. 받은 값을 사용자가 1시간, 하루, 일주일 선택에 따라 값을 조정하고 앱에 리턴할 수 있는 기능 구현
