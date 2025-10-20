@@ -49,22 +49,16 @@ class _FishTankLoginState extends State<FishTankLogin> {
         body: jsonEncode({"id": id, "password": password}),
       );
 
+      showResponseMessage(context, response);
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final token = data["token"];
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("로그인 성공")),
-        );
 
         print("JWT TOKEN: $token");
 
         // 다음 화면으로 이동 예시
         // Navigator.push(context, MaterialPageRoute(builder: (_) => const DashboardPage()));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("로그인 실패: ${response.body}")),
-        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -258,21 +252,6 @@ class _SignUpPageState extends State<SignUpPage> {
     final pwCheck = _pwCheckController.text.trim();
     final name = _nameController.text.trim();
 
-    if (id.isEmpty || pw.isEmpty || name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('모든 항목을 입력해주세요.')),
-      );
-      return;
-    }
-
-    if (pw != pwCheck) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('비밀번호가 일치하지 않습니다.')),
-      );
-      return;
-    }
-
-    try {
       // Spring Boot API 주소
       final url = Uri.parse("http://192.168.34.17:8080/api/user/register");
 
@@ -287,21 +266,11 @@ class _SignUpPageState extends State<SignUpPage> {
         }),
       );
 
+      showResponseMessage(context, response);
+
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('회원가입 성공! 로그인 화면으로 이동합니다.')),
-        );
         Navigator.pop(context); // 로그인 화면으로 돌아가기
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('회원가입 실패: ${response.body}')),
-        );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('서버 연결 실패: $e')),
-      );
-    }
   }
 
   @override
@@ -654,6 +623,39 @@ class InsertChangePasswordPage extends StatelessWidget{
           ),
         ),
       ),
+    );
+  }
+}
+
+void showResponseMessage(BuildContext context, http.Response response) {
+  try {
+    final data = jsonDecode(response.body);
+    String message = "";
+
+    if (data is Map && data.containsKey("message")) {
+      // 일반적인 서버 메시지
+      message = data["message"];
+    }
+    else if (data is List) {
+      // 유효성 검사 실패 시: defaultMessage 필터링
+      final messages = data
+          .whereType<Map>() // Map 형태만 필터링
+          .where((item) => item.containsKey("defaultMessage"))
+          .map((item) => item["defaultMessage"].toString())
+          .toList();
+
+      message = messages.isNotEmpty ? messages.join("\n") : response.body;
+    }
+    else {
+      message = response.body;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("응답 처리 중 오류: $e")),
     );
   }
 }
