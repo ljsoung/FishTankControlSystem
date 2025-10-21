@@ -41,7 +41,7 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String id) throws UsernameNotFoundException {
         Optional<AppUser> _appUser = this.userRepository.findById(id);
         if (_appUser.isEmpty()) {
-            throw new UsernameNotFoundException("사용자를 찾을수 없습니다.");
+            throw new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
         }
         AppUser appUser = _appUser.get();
         List<GrantedAuthority> authorities = new ArrayList<>();
@@ -49,11 +49,10 @@ public class UserService implements UserDetailsService {
         return new User(appUser.getId(), appUser.getPassword(), authorities);
     }
 
-    @Transactional
-    public void updateFishType(String userId, String fishType) {
-        AppUser user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
-        user.setFishType(fishType);
-        // JPA 변경감지로 자동 업데이트
+    public AppUser resetPassword(AppUser user) {
+        String encodedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(encodedPassword);
+
+        return userRepository.save(user);
     }
 }

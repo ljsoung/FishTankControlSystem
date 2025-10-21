@@ -1,6 +1,7 @@
 package com.iotbigdata.fishtankproject.controller;
 
 import com.iotbigdata.fishtankproject.domain.AppUser;
+import com.iotbigdata.fishtankproject.dto.PasswordResetDto;
 import com.iotbigdata.fishtankproject.dto.UserLoginDto;
 import com.iotbigdata.fishtankproject.dto.UserRegisterDto;
 import com.iotbigdata.fishtankproject.repository.UserRepository;
@@ -17,6 +18,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Optional;
 
 @RestController // Json 형태 변환 -> 앱 연동용
 @RequestMapping("/api/user")
@@ -30,7 +32,7 @@ public class UserController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
 
-    @PostMapping("/register")
+    @PostMapping("/register") // 회원가입 버튼 누를 시 여기 실행
     public synchronized ResponseEntity<?> register(@Valid @RequestBody UserRegisterDto dto, BindingResult result) {
         if (result.hasErrors()) { // 에러 확인
             return ResponseEntity.badRequest().body(result.getAllErrors());
@@ -38,13 +40,43 @@ public class UserController {
         try {
             AppUser user = dto.toEntity(); // 유저 정보 받아 옴
             userService.register(user); // 회원 가입
-            return ResponseEntity.ok("회원가입 완료"); // 회원가입 완료 시 body 리턴
+            return ResponseEntity.ok(Map.of("message", "회원가입 완료")); // 회원가입 완료 시 body 리턴
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @PostMapping("/login")
+    @PostMapping("/reset")
+    public ResponseEntity<?> find(@Valid @RequestBody PasswordResetDto dto, BindingResult result) {
+        if (result.hasErrors()) { // 유효성 검사
+            return ResponseEntity.badRequest().body(result.getAllErrors());
+        }
+
+        Optional<AppUser> optionalUser = userRepository.findById(dto.getId());
+
+        // 존재 여부 먼저 확인
+        if (optionalUser.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "아이디가 존재하지 않습니다."));
+        }
+
+        AppUser user = optionalUser.get();
+
+        // 이름 일치 여부 확인
+        if (!user.getName().equals(dto.getName())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "이름이 일치하지 않습니다."));
+        }
+
+        try {
+            user.setPassword(dto.getNewPassword());
+            userService.resetPassword(user);
+            return ResponseEntity.ok(Map.of("message", "비밀번호 변경 완료")); // 비밀번호 변경 완료 시 body 리턴
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+
+    @PostMapping("/login") // 로그인 버튼 누를 시 여기 실행
     public ResponseEntity<?> login(@Valid @RequestBody UserLoginDto dto, BindingResult result) {
         if (result.hasErrors()) { // 유효성 검사
             return ResponseEntity.badRequest().body(result.getAllErrors());
@@ -64,20 +96,7 @@ public class UserController {
                     "token", token
             ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("아이디 또는 비밀번호가 올바르지 않습니다.");
+            return ResponseEntity.badRequest().body(Map.of("message", "아이디 또는 비밀번호가 올바르지 않습니다."));
         }
-    }
-
-    @PatchMapping("/fish_type")
-    public ResponseEntity<?> updateMyFishType(@RequestBody Map<String, String> body,
-                                              Authentication authentication) {
-        String fishType = body.get("fishType");
-        if (fishType == null || fishType.isBlank()) {
-            return ResponseEntity.badRequest().body("fishType 은 비어있을 수 없습니다.");
-        }
-        // 토큰 subject = 사용자 ID (authentication.getName())
-        String userId = authentication.getName();
-        userService.updateFishType(userId, fishType);
-        return ResponseEntity.ok(Map.of("message", "fishType 업데이트 완료", "fishType", fishType));
     }
 }
