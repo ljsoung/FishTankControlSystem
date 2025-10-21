@@ -776,17 +776,26 @@ class MainFishTankScreen extends StatelessWidget {
                 ),
               ),
 
-              // ✅ 하단 메뉴 버튼 3개
+              //하단 메뉴 버튼 3개
               Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildMenuButton("꾸미기", Icons.brush),
-                    _buildMenuButton("어종 선택", Icons.pets),
-                    _buildMenuButton("센서 데이터", Icons.sensors),
-                    _buildMenuButton("사료 배식 시간", Icons.alarm),
-                  ],
+                padding: const EdgeInsets.only(bottom: 1),
+                child: SizedBox(
+                  height: 130, // 버튼 2줄을 보여줄 충분한 높이 확보
+                  child: GridView.count(
+                    crossAxisCount: 2, //한 줄에 2개씩
+                    mainAxisSpacing: 10, // 세로 간격
+                    crossAxisSpacing: 10, // 가로 간격
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(), // 스크롤 비활성화
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    childAspectRatio: 3.8, //버튼 비율 (가로 : 세로) - 화면에 맞춰 조절 가능
+                    children: [
+                      _buildMenuButton("꾸미기", Icons.brush),
+                      _buildMenuButton("어종 선택", Icons.pets),
+                      _buildMenuButton("센서 데이터", Icons.sensors),
+                      _buildMenuButton("사료 배식 시간", Icons.alarm),
+                    ],
+                  ),
                 ),
               ),
             ],
