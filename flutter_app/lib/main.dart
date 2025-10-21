@@ -403,8 +403,48 @@ class _SignUpPageState extends State<SignUpPage> {
 }
 
 // 비밀번호 변경
-class ChangePasswordPage extends StatelessWidget{
+class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
+
+  @override
+  State<ChangePasswordPage> createState() => _ChangePasswordPageState();
+}
+
+class _ChangePasswordPageState extends State<ChangePasswordPage> {
+  final TextEditingController _idController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+
+  Future<void> _verifyUser() async {
+    final id = _idController.text.trim();
+    final name = _nameController.text.trim();
+
+    final url = Uri.parse("http://192.168.34.17:8080/api/user/verify");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"id": id, "name": name}),
+      );
+
+      showResponseMessage(context, response);
+
+      if (response.statusCode == 200) {
+
+        // 다음 화면으로 이동하면서 ID 전달
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => InsertChangePasswordPage(userId: id),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('서버 연결 실패: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -415,9 +455,9 @@ class ChangePasswordPage extends StatelessWidget{
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF00BCD4), // 청록색
-              Color(0xFF2196F3), // 밝은 파랑
-              Color(0xFF006064), // 어두운 민트 블루
+              Color(0xFF00BCD4),
+              Color(0xFF2196F3),
+              Color(0xFF006064),
             ],
           ),
         ),
@@ -429,13 +469,17 @@ class ChangePasswordPage extends StatelessWidget{
                 children: [
                   const Text(
                     '비밀번호 변경',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
                   ),
                   const SizedBox(height: 30),
 
                   // ID
-                  const TextField(
-                    decoration: InputDecoration(
+                  TextField(
+                    controller: _idController,
+                    decoration: const InputDecoration(
                       labelText: 'ID',
                       border: OutlineInputBorder(),
                       fillColor: Colors.white,
@@ -444,10 +488,10 @@ class ChangePasswordPage extends StatelessWidget{
                   ),
                   const SizedBox(height: 20),
 
-
                   // 이름
-                  const TextField(
-                    decoration: InputDecoration(
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
                       labelText: '이름',
                       border: OutlineInputBorder(),
                       fillColor: Colors.white,
@@ -455,7 +499,6 @@ class ChangePasswordPage extends StatelessWidget{
                     ),
                   ),
                   const SizedBox(height: 30),
-                  
 
                   // 버튼 2개
                   Row(
@@ -463,49 +506,27 @@ class ChangePasswordPage extends StatelessWidget{
                     children: [
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white, // 버튼 배경 흰색
-                          foregroundColor: Colors.black, // 글자색 (파란색)
-                          side: BorderSide(color: Colors.black), // 테두리도 파란색
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12), // 모서리 둥글게
-                          ),
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          side: const BorderSide(color: Colors.black),
                         ),
-                        onPressed: () {
-                          Navigator.pop(context); // 되돌아가기
-                        },
+                        onPressed: () => Navigator.pop(context),
                         child: const Text('되돌아가기'),
                       ),
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
-                          side: BorderSide(color: Colors.black),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          side: const BorderSide(color: Colors.black),
                         ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const InsertChangePasswordPage()),
-                          );
-                        },
+                        onPressed: _verifyUser,
                         child: const Text('확인'),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 30),
-
-                  // 어항 이미지
-                  Image.asset(
-                    'assets/fish_tank.png',
-                    height: 350,
-                    fit: BoxFit.contain,
-                  ),
+                  Image.asset('assets/fish_tank.png', height: 350),
                 ],
               ),
             ),
@@ -518,8 +539,49 @@ class ChangePasswordPage extends StatelessWidget{
 
 
 // 변경할 비밀번호 입력
-class InsertChangePasswordPage extends StatelessWidget{
-  const InsertChangePasswordPage({super.key});
+class InsertChangePasswordPage extends StatefulWidget {
+  final String userId;
+
+  const InsertChangePasswordPage({super.key, required this.userId});
+
+  @override
+  State<InsertChangePasswordPage> createState() =>
+      _InsertChangePasswordPageState();
+}
+
+class _InsertChangePasswordPageState extends State<InsertChangePasswordPage> {
+  final TextEditingController _newPwController = TextEditingController();
+  final TextEditingController _confirmPwController = TextEditingController();
+
+  Future<void> _resetPassword() async {
+    final newPassword = _newPwController.text.trim();
+    final confirmNewPassword = _confirmPwController.text.trim();
+
+    final url = Uri.parse("http://192.168.34.17:8080/api/user/reset");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "id": widget.userId, // 전달받은 id 사용
+          "newPassword": newPassword,
+          "confirmNewPassword": confirmNewPassword,
+        }),
+      );
+
+      showResponseMessage(context, response);
+
+      if (response.statusCode == 200) {
+
+        Navigator.popUntil(context, (route) => route.isFirst); // 로그인 화면으로 복귀
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('서버 연결 실패: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -530,9 +592,9 @@ class InsertChangePasswordPage extends StatelessWidget{
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF00BCD4), // 청록색
-              Color(0xFF2196F3), // 밝은 파랑
-              Color(0xFF006064), // 어두운 민트 블루
+              Color(0xFF00BCD4),
+              Color(0xFF2196F3),
+              Color(0xFF006064),
             ],
           ),
         ),
@@ -543,15 +605,19 @@ class InsertChangePasswordPage extends StatelessWidget{
               child: Column(
                 children: [
                   const Text(
-                    '비밀번호 변경',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                    '비밀번호 재설정',
+                    style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
                   ),
                   const SizedBox(height: 30),
 
-                  // ID
-                  const TextField(
-                    decoration: InputDecoration(
-                      labelText: '변경할 비밀번호',
+                  TextField(
+                    controller: _newPwController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: '새 비밀번호',
                       border: OutlineInputBorder(),
                       fillColor: Colors.white,
                       filled: true,
@@ -559,11 +625,11 @@ class InsertChangePasswordPage extends StatelessWidget{
                   ),
                   const SizedBox(height: 20),
 
-
-                  // 이름
-                  const TextField(
-                    decoration: InputDecoration(
-                      labelText: '변경할 비밀번호 확인',
+                  TextField(
+                    controller: _confirmPwController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: '새 비밀번호 확인',
                       border: OutlineInputBorder(),
                       fillColor: Colors.white,
                       filled: true,
@@ -571,52 +637,32 @@ class InsertChangePasswordPage extends StatelessWidget{
                   ),
                   const SizedBox(height: 30),
 
-
-                  // 버튼 2개
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.white, // 버튼 배경 흰색
-                          foregroundColor: Colors.black, // 글자색 (파란색)
-                          side: BorderSide(color: Colors.black), // 테두리도 파란색
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12), // 모서리 둥글게
-                          ),
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          side: const BorderSide(color: Colors.black),
                         ),
-                        onPressed: () {
-                          Navigator.pop(context); // 되돌아가기
-                        },
+                        onPressed: () => Navigator.pop(context),
                         child: const Text('되돌아가기'),
                       ),
                       OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
-                          side: BorderSide(color: Colors.black),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          side: const BorderSide(color: Colors.black),
                         ),
-                        onPressed: () {
-                          // 확인 로직
-                        },
+                        onPressed: _resetPassword,
                         child: const Text('비밀번호 변경'),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 30),
-
-                  // 어항 이미지
-                  Image.asset(
-                    'assets/fish_tank.png',
-                    height: 350,
-                    fit: BoxFit.contain,
-                  ),
+                  Image.asset('assets/fish_tank.png', height: 350),
                 ],
               ),
             ),
@@ -629,6 +675,14 @@ class InsertChangePasswordPage extends StatelessWidget{
 
 void showResponseMessage(BuildContext context, http.Response response) {
   try {
+
+    if (response.body.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("서버에서 빈 응답을 받았습니다.")),
+      );
+      return;
+    }
+
     final data = jsonDecode(response.body);
     String message = "";
 
