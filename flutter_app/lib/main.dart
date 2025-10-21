@@ -799,18 +799,23 @@ class MainFishTankScreen extends StatelessWidget {
   // 🔹 상단 데이터 박스 위젯
   Widget _buildDataBox(String label) {
     return Container(
+      alignment: Alignment.center,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.black38, width: 1),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
+      child: FittedBox(
+        fit: BoxFit.scaleDown, // 텍스트가 박스보다 커지면 자동 축소
+        child: Text(
+          label,
+          textAlign: TextAlign.center, // 여러 줄일 때 중앙 정렬
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
         ),
       ),
     );
