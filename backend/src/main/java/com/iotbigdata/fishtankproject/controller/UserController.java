@@ -47,43 +47,6 @@ public class UserController {
         }
     }
 
-    /*
-    @PostMapping("/reset")
-    public ResponseEntity<?> find(@Valid @RequestBody PasswordResetDto dto, BindingResult result) {
-        if (result.hasErrors()) { // 유효성 검사
-            return ResponseEntity.badRequest().body(result.getAllErrors());
-        }
-
-        Optional<AppUser> optionalUser = userRepository.findById(dto.getId());
-
-        /*
-        *
-        * 아이디 이름 일치 여부 나눠야됨 TODO
-        *
-
-        // 존재 여부 먼저 확인
-        if (optionalUser.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "아이디가 존재하지 않습니다."));
-        }
-
-        AppUser user = optionalUser.get();
-
-        // 이름 일치 여부 확인
-        if (!user.getName().equals(dto.getName())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "이름이 일치하지 않습니다."));
-        }
-
-        try {
-            user.setPassword(dto.getNewPassword());
-            userService.resetPassword(user);
-            return ResponseEntity.ok(Map.of("message", "비밀번호 변경 완료")); // 비밀번호 변경 완료 시 body 리턴
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-     */
-
     @PostMapping("/verify")
     public ResponseEntity<?> verifyUser(@Valid @RequestBody VerifyUserDto dto,  BindingResult result) {
 

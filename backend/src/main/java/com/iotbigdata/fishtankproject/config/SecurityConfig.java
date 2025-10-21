@@ -29,7 +29,7 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
-                // ✅ JwtAuthenticationFilter를 직접 생성해서 주입
+                // JwtAuthenticationFilter를 직접 생성해서 주입
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userService),
                         UsernamePasswordAuthenticationFilter.class);
 
