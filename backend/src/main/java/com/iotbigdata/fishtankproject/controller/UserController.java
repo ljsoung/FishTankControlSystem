@@ -64,10 +64,10 @@ public class UserController {
     }
 
     @PostMapping("/reset")
-    public ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetDto dto) {
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetDto dto, BindingResult result) {
         Optional<AppUser> optionalUser = userRepository.findById(dto.getId());
-        if (optionalUser.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "존재하지 않는 아이디입니다."));
+        if (result.hasErrors()) { // 에러 확인
+            return ResponseEntity.badRequest().body(result.getAllErrors());
         }
 
         AppUser user = optionalUser.get();

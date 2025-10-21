@@ -14,12 +14,21 @@ public class Fish {
     @Column(name = "fish_type", length = 50, nullable = false, unique = true)
     private String fishType; // PK
 
-    @Column(name = "good_temperature")
-    private Double goodTemperature;
+    @Column(name = "min_temperature")
+    private Double minTemperature;
 
-    @Column(name = "good_tds")
-    private Double goodTds;
+    @Column(name = "max_temperature")
+    private Double maxTemperature;
 
-    @Column(name = "good_dissolved_oxygen")
-    private Double goodDissolvedOxygen;
+    @Column(name = "min_tds")
+    private Double minTds;
+
+    @Column(name = "max_tds")
+    private Double maxTds;
+
+    @Column(name = "min_dissolved_oxygen")
+    private Double minDissolvedOxygen;
+
+    @Column(name = "max_disolved_oxygen")
+    private Double maxDissolvedOxygen;
 }
