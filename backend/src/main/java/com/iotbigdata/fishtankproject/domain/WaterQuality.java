@@ -11,7 +11,8 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Table(name = "water_quality")
-public class WaterQuality {
+public class WaterQuality implements SensorEntity {
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,4 +26,13 @@ public class WaterQuality {
 
     private LocalDateTime measureAt;
 
+    @Override
+    public Long getSensorValue() {
+        return sensor_value;
+    }
+
+    @Override
+    public LocalDateTime getMeasureAt() {
+        return measureAt;
+    }
 }

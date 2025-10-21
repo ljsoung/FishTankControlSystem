@@ -1,8 +1,6 @@
 package com.iotbigdata.fishtankproject.controller;
 
-import com.iotbigdata.fishtankproject.domain.DissolvedOxygen;
-import com.iotbigdata.fishtankproject.domain.WaterQuality;
-import com.iotbigdata.fishtankproject.domain.WaterTemperature;
+import com.iotbigdata.fishtankproject.domain.*;
 import com.iotbigdata.fishtankproject.dto.SensorInputDto;
 import com.iotbigdata.fishtankproject.repository.DissolvedOxygenRepository;
 import com.iotbigdata.fishtankproject.repository.UserRepository;
@@ -13,7 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/sensor")
@@ -57,4 +60,109 @@ public class SensorController {
 
         return ResponseEntity.ok(Map.of("message", "센서 데이터 저장 완료"));
     }
+
+    @GetMapping("/data")
+    public ResponseEntity<?> getSensorData(
+            @RequestParam String userId,
+            @RequestParam(defaultValue = "1h") String range,
+            @RequestParam(defaultValue = "10") int count) {
+
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        LocalDateTime endTime = LocalDateTime.now();
+        LocalDateTime startTime;
+
+        switch (range) {
+            case "1h" -> startTime = endTime.minusHours(count);
+            case "1d" -> startTime = endTime.minusDays(count);
+            case "1w" -> startTime = endTime.minusWeeks(count);
+            default -> {
+                return ResponseEntity.badRequest().body(Map.of("error", "유효하지 않은 range 값"));
+            }
+        }
+
+        // DB에서 모든 데이터 가져오기
+        List<WaterTemperature> tempData = tempRepo.findAllByUserAndMeasureAtBetween(user, startTime, endTime);
+        List<DissolvedOxygen> doData = doRepo.findAllByUserAndMeasureAtBetween(user, startTime, endTime);
+        List<WaterQuality> phData = phRepo.findAllByUserAndMeasureAtBetween(user, startTime, endTime);
+
+        // 단위별 그룹화 및 평균 계산
+        Map<String, List<Map<String, Object>>> groupedData = new HashMap<>();
+
+        groupedData.put("temperatureData", groupSensorData(tempData, range));
+        groupedData.put("doData", groupSensorData(doData, range));
+        groupedData.put("phData", groupSensorData(phData, range));
+
+        return ResponseEntity.ok(Map.of(
+                "range", range,
+                "count", count,
+                "startTime", startTime,
+                "endTime", endTime,
+                "data", groupedData
+        ));
+    }
+/*
+    @GetMapping("/data/reload")
+    public ResponseEntity<?> reloadSensorData(
+            @RequestParam String userId,
+            @RequestParam(defaultValue = "1h") String range{
+
+    }
+    )
+
+ */
+private <T extends SensorEntity> List<Map<String, Object>> groupSensorData(List<T> data, String range) {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    if (range.equals("1h")) {
+        // ✅ 1시간 단위: 그대로 반환
+        return data.stream()
+                .map(d -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("time", d.getMeasureAt().format(formatter));
+                    map.put("value", d.getSensorValue());
+                    return map;
+                })
+                .toList();
+
+    } else if (range.equals("1d")) {
+        // ✅ 1일 단위: 날짜별 평균
+        return data.stream()
+                .collect(Collectors.groupingBy(d -> d.getMeasureAt().toLocalDate()))
+                .entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("date", e.getKey().toString());
+                    map.put("value", e.getValue().stream()
+                            .mapToDouble(SensorEntity::getSensorValue)
+                            .average()
+                            .orElse(0));
+                    return map;
+                })
+                .toList();
+
+    } else if (range.equals("1w")) {
+        // ✅ 1주 단위: 주차별 평균
+        return data.stream()
+                .collect(Collectors.groupingBy(d ->
+                        d.getMeasureAt().getYear() + "-W" +
+                                d.getMeasureAt().get(ChronoField.ALIGNED_WEEK_OF_YEAR)))
+                .entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("week", e.getKey());
+                    map.put("value", e.getValue().stream()
+                            .mapToDouble(SensorEntity::getSensorValue)
+                            .average()
+                            .orElse(0));
+                    return map;
+                })
+                .toList();
+    }
+
+    return List.of();
+}
 }

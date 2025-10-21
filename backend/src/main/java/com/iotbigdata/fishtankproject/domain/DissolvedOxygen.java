@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Table(name = "dissolved_oxygen")
-public class DissolvedOxygen {
+public class DissolvedOxygen implements SensorEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,4 +24,13 @@ public class DissolvedOxygen {
 
     private LocalDateTime measureAt;
 
+    @Override
+    public Long getSensorValue() {
+        return sensor_value;
+    }
+
+    @Override
+    public LocalDateTime getMeasureAt() {
+        return measureAt;
+    }
 }
