@@ -26,9 +26,6 @@ public class Fish {
     @Column(name = "max_tds")
     private Double maxTds;
 
-    @Column(name = "min_dissolved_oxygen")
-    private Double minDissolvedOxygen;
-
-    @Column(name = "max_disolved_oxygen")
-    private Double maxDissolvedOxygen;
+    @Column(name = "min_dissolved_oxygen_At_20")
+    private Double doMinAt20;
 }
