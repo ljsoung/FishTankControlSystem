@@ -762,19 +762,17 @@ class MainFishTankScreen extends StatelessWidget {
                 ),
               ),
 
-              // ✅ 중앙 어항 영역 (물고기 없이)
+              // 중앙 이미지 부분
               Expanded(
                 child: Center(
-                  child: Text(
-                    '🐠 스마트 어항 메인 화면',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.95),
-                    ),
+                  child: Image.asset(
+                    'assets/fish_tank.png',
+                    height: 400,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
+
 
               //하단 메뉴 버튼 3개
               Padding(
