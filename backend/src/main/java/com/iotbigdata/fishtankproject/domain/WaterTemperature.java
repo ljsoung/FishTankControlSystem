@@ -22,6 +22,6 @@ public class WaterTemperature {
 
     private Long sensor_value;
 
-    private LocalDateTime measure_at;
+    private LocalDateTime measureAt;
 
 }

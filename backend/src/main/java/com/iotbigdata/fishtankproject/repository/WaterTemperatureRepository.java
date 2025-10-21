@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface WaterTemperatureRepository extends JpaRepository<WaterTemperature, String> {
-    Optional<WaterTemperature> findTopByUserIdOrderByTimestampDesc(Long userId);
+    Optional<WaterTemperature> findTopByUserIdOrderByMeasureAtDesc(String userId);
 }

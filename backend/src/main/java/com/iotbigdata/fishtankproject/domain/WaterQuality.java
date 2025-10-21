@@ -23,6 +23,6 @@ public class WaterQuality {
 
     private Long sensor_value;
 
-    private LocalDateTime measure_at;
+    private LocalDateTime measureAt;
 
 }

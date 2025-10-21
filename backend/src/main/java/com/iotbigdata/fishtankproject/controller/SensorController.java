@@ -38,21 +38,21 @@ public class SensorController {
         WaterTemperature temp = new WaterTemperature();
         temp.setUser(user);
         temp.setSensor_value(dto.getTemperature());
-        temp.setMeasure_at(LocalDateTime.now());
+        temp.setMeasureAt(LocalDateTime.now());
         tempRepo.save(temp);
 
         // 용존 산소
         DissolvedOxygen oxygen = new DissolvedOxygen();
         oxygen.setUser(user);
         oxygen.setSensor_value(dto.getDoValue());
-        oxygen.setMeasure_at(LocalDateTime.now());
+        oxygen.setMeasureAt(LocalDateTime.now());
         doRepo.save(oxygen);
 
         // 수질
         WaterQuality ph = new WaterQuality();
         ph.setUser(user);
         ph.setSensor_value(dto.getPh());
-        ph.setMeasure_at(LocalDateTime.now());
+        ph.setMeasureAt(LocalDateTime.now());
         phRepo.save(ph);
 
         return ResponseEntity.ok(Map.of("message", "센서 데이터 저장 완료"));

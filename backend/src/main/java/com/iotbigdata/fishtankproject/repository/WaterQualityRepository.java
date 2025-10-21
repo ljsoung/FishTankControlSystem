@@ -6,5 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface WaterQualityRepository extends JpaRepository<WaterQuality, String> {
-    Optional<WaterQuality> findTopByUserIdOrderByTimestampDesc(Long userId);
+    Optional<WaterQuality> findTopByUserIdOrderByMeasureAtDesc(String userId);
 }
