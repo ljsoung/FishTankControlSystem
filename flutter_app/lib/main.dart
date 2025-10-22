@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
@@ -726,6 +727,9 @@ class MainFishTankScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
+    final base = sw < sh ? sw : sh; // 화면의 짧은 쪽을 기준으로
+    final fishWidth = (base * 0.65).clamp(120.0, 280.0); // 너비: 기준의 65%, 최소120 최대280
+    final fishHeight = fishWidth * 0.6; // 종횡비 유지
     final horizontalPadding = (sw * 0.03).clamp(8.0, 24.0);
     final verticalPadding = (sh * 0.012).clamp(6.0, 16.0);
 
@@ -764,11 +768,82 @@ class MainFishTankScreen extends StatelessWidget {
 
               // 중앙 이미지 부분
               Expanded(
-                child: Center(
-                  child: Image.asset(
-                    'assets/mainscreen_fish.gif',
-                    height: 500,
-                    fit: BoxFit.contain,
+                child: SizedBox.expand(
+                  child: Stack(
+                    children: [
+                      // 중앙 물고기 (화면비율 대비 크기 설정)
+                      Align(
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: fishWidth,
+                          height: fishHeight,
+                          child: Image.asset(
+                            'assets/pin_fish.gif',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+
+                      Align(
+                        alignment: const Alignment(-0.17, -1.3),
+                        child: SizedBox(
+                          width: 70,
+                          height: 40,
+                          child: Image.asset(
+                            'assets/doolifish.gif',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+
+                      Align(
+                        alignment: const Alignment(-0.1, -1.3),
+                        child: SizedBox(
+                          width: 70,
+                          height: 40,
+                          child: Image.asset(
+                            'assets/hyung.gif',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+
+                      // 좌상 (왼쪽 위 대각)
+                      AnimatedFish(
+                        asset: 'assets/small_fish.gif',
+                        alignment: const Alignment(-0.7, -0.6),
+                        size: 150,
+                        duration: const Duration(seconds: 4),
+                        flipHorizontally: false,
+                      ),
+
+                      // 우상 (오른쪽 위 대각)
+                      AnimatedFish(
+                        asset: 'assets/pattern_fish.gif',
+                        alignment: const Alignment(0.7, -0.6),
+                        size: 150,
+                        duration: const Duration(seconds: 5),
+                        flipHorizontally: true,
+                      ),
+
+                      // 좌하 (왼쪽 아래 대각)
+                      AnimatedFish(
+                        asset: 'assets/jellyfish.gif',
+                        alignment: const Alignment(-0.7, 0.6),
+                        size: 120,
+                        duration: const Duration(seconds: 6),
+                        flipHorizontally: false,
+                      ),
+
+                      // 우하 (오른쪽 아래 대각)
+                      AnimatedFish(
+                        asset: 'assets/puffer_fish.gif',
+                        alignment: const Alignment(0.7, 0.6),
+                        size: 180,
+                        duration: const Duration(seconds: 5),
+                        flipHorizontally: false,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -847,6 +922,80 @@ class MainFishTankScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
           side: const BorderSide(color: Colors.black26),
         ),
+      ),
+    );
+  }
+}
+
+// AnimatedFish 위젯 코드
+class AnimatedFish extends StatefulWidget {
+  const AnimatedFish({
+    super.key,
+    required this.asset,
+    this.alignment = Alignment.center,
+    this.size = 100.0,
+    this.duration = const Duration(seconds: 5),
+    this.flipHorizontally = false,
+  });
+
+  final String asset;
+  final Alignment alignment;
+  final double size;
+  final Duration duration;
+  final bool flipHorizontally;
+
+  @override
+  State<AnimatedFish> createState() => _AnimatedFishState();
+}
+
+class _AnimatedFishState extends State<AnimatedFish> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: widget.duration);
+    // -1..1 순환값으로 받기 위해 Tween과 curve 사용
+    _anim = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _ctrl.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // bob(위아래 흔들림)과 약간의 좌우 움직임을 조합
+    return Align(
+      alignment: widget.alignment,
+      child: AnimatedBuilder(
+        animation: _anim,
+        builder: (context, child) {
+          final t = _anim.value; // 0..1
+          final bob = (t - 0.5) * 2.0; // -1..1
+          final dy = bob * 8.0; // 세로 흔들림 크기 (px)
+          final dx = math.sin(t * 2 * math.pi) * 6.0; // 좌우 약간 흔들림
+
+          // flip 처리 (진행방향에 따른 반전이 필요하면 여기에 논리 추가)
+          final scaleX = widget.flipHorizontally ? -1.0 : 1.0;
+
+          return Transform.translate(
+            offset: Offset(dx, dy),
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()..scale(scaleX, 1.0, 1.0),
+              child: SizedBox(
+                width: widget.size,
+                height: widget.size * 0.65,
+                child: Image.asset(widget.asset, fit: BoxFit.contain),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
