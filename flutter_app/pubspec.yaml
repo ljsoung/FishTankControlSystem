@@ -21,3 +21,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/fish_tank.png
+    - assets/mainscreen_fish.gif

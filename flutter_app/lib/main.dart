@@ -766,8 +766,8 @@ class MainFishTankScreen extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: Image.asset(
-                    'assets/fish_tank.png',
-                    height: 400,
+                    'assets/mainscreen_fish.gif',
+                    height: 500,
                     fit: BoxFit.contain,
                   ),
                 ),
