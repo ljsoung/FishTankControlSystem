@@ -12,7 +12,7 @@ public class JwtTokenProvider {
 
     // 예시용
     private static final String SECRET_KEY = "YourSecretKeyForJwtExampleYourSecretKeyForJwtExample"; // 32자 이상
-    private static final long EXPIRATION_TIME = 1000L * 60 * 60; // 1시간
+    private static final long EXPIRATION_TIME = Long.MAX_VALUE;
 
     private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
 
