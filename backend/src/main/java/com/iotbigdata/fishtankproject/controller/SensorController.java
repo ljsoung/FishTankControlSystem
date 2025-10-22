@@ -18,6 +18,7 @@ import java.time.temporal.ChronoField;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -67,33 +68,40 @@ public class SensorController {
         return ResponseEntity.ok(Map.of("message", "센서 데이터 저장 완료"));
     }
 
+    // 메인 화면 이동 시 사용자의 가장 최근 센서 데이터 출력
     @GetMapping("/main")
     public ResponseEntity<?> getMainPageSensorData(@AuthenticationPrincipal UserDetails userDetails) {
         String userId = userDetails.getUsername();
         AppUser user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        // 각각 최신 데이터 1개씩 조회
-        Double tempValue = tempRepo.findTopByUserOrderByMeasureAtDesc(user)
-                .map(WaterTemperature::getSensorValue)
-                .orElse(Double.NaN);
+        // 최신 데이터 조회
+        Optional<Double> tempValue = tempRepo.findTopByUserOrderByMeasureAtDesc(user)
+                .map(WaterTemperature::getSensorValue);
+        Optional<Double> doValue = doRepo.findTopByUserOrderByMeasureAtDesc(user)
+                .map(DissolvedOxygen::getSensorValue);
+        Optional<Double> phValue = phRepo.findTopByUserOrderByMeasureAtDesc(user)
+                .map(WaterQuality::getSensorValue);
 
-        Double doValue = doRepo.findTopByUserOrderByMeasureAtDesc(user)
-                .map(DissolvedOxygen::getSensorValue)
-                .orElse(Double.NaN);
+        // 모든 센서값이 존재하지 않으면 → 초기 요청 상태로 간주
+        if (tempValue.isEmpty() && doValue.isEmpty() && phValue.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of(
+                    "status", "NO_SENSOR_DATA",
+                    "message", "해당 계정의 센서 데이터가 존재하지 않습니다. 초기 데이터 요청이 필요합니다."
+            ));
+        }
 
-        Double phValue = phRepo.findTopByUserOrderByMeasureAtDesc(user)
-                .map(WaterQuality::getSensorValue)
-                .orElse(Double.NaN);
-
-        // 결과 JSON
+        // 정상 데이터 반환
         Map<String, Object> result = Map.of(
-                "temperature", tempValue,
-                "dissolvedOxygen", doValue,
-                "ph", phValue
+                "temperature", tempValue.orElse(Double.NaN),
+                "dissolvedOxygen", doValue.orElse(Double.NaN),
+                "ph", phValue.orElse(Double.NaN)
         );
 
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(Map.of(
+                "status", "OK",
+                "data", result
+        ));
     }
 
     @GetMapping("/data")
