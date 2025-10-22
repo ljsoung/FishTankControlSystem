@@ -2,10 +2,7 @@ package com.iotbigdata.fishtankproject.controller;
 
 import com.iotbigdata.fishtankproject.domain.*;
 import com.iotbigdata.fishtankproject.dto.SensorInputDto;
-import com.iotbigdata.fishtankproject.repository.DissolvedOxygenRepository;
-import com.iotbigdata.fishtankproject.repository.UserRepository;
-import com.iotbigdata.fishtankproject.repository.WaterQualityRepository;
-import com.iotbigdata.fishtankproject.repository.WaterTemperatureRepository;
+import com.iotbigdata.fishtankproject.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,10 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -91,16 +85,50 @@ public class SensorController {
             ));
         }
 
-        // 정상 데이터 반환
-        Map<String, Object> result = Map.of(
-                "temperature", tempValue.orElse(Double.NaN),
-                "dissolvedOxygen", doValue.orElse(Double.NaN),
-                "ph", phValue.orElse(Double.NaN)
+        Fish fish = user.getFishType();
+
+        // 어종 없을 시
+        if (fish == null) {
+            return ResponseEntity.status(400).body(Map.of(
+                    "status", "NO_FISH_TYPE",
+                    "message", "사용자에게 등록된 어종 정보가 없습니다. 회원정보에서 어종을 먼저 등록해주세요."
+            ));
+        }
+
+        double t = tempValue.orElse(Double.NaN);
+        double d = doValue.orElse(Double.NaN);
+        double p = phValue.orElse(Double.NaN);
+
+        boolean tempAlert = (t < fish.getMinTemp() || t > fish.getMaxTemp());
+        boolean doAlert = (d < fish.getMinDo() || d > fish.getMaxDo());
+        boolean tdsAlert = (p < fish.getMinTds() || p > fish.getMaxTds());
+
+        List<String> abnormalItems = new ArrayList<>();
+        if (tempAlert) abnormalItems.add("temperature");
+        if (doAlert) abnormalItems.add("dissolvedOxygen");
+        if (tdsAlert) abnormalItems.add("tds");
+
+        // 결과 구성
+        Map<String, Object> data = Map.of(
+                "temperature", Map.of(
+                        "value", t
+                ),
+                "dissolvedOxygen", Map.of(
+                        "value", d
+                ),
+                "tds", Map.of(
+                        "value", p
+                )
         );
 
+        String status = abnormalItems.isEmpty() ? "OK" : "WARNING";
+
+        // 최종 응답
         return ResponseEntity.ok(Map.of(
-                "status", "OK",
-                "data", result
+                "status", status,
+                "fishType", fish.getFishType(),
+                "abnormalItems", abnormalItems,
+                "data", data
         ));
     }
 

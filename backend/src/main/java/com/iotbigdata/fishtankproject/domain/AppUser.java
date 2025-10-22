@@ -18,15 +18,10 @@ public class AppUser {
 
     private String name;
 
-    private String fish_type;
-
-    /*
     // fish_type 테이블 완성 후 추가
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fish_type", nullable = true)  // user 테이블에 생성될 FK 컬럼명, 최초 회원가입 시 null
-    private Fish fish_type;
-
-     */
+    private Fish fishType;
 
     @Enumerated(EnumType.STRING)
     private Role role;
