@@ -4,6 +4,7 @@ import com.iotbigdata.fishtankproject.domain.AppUser;
 import com.iotbigdata.fishtankproject.dto.PasswordResetDto;
 import com.iotbigdata.fishtankproject.dto.UserLoginDto;
 import com.iotbigdata.fishtankproject.dto.UserRegisterDto;
+import com.iotbigdata.fishtankproject.dto.VerifyUserDto;
 import com.iotbigdata.fishtankproject.repository.UserRepository;
 import com.iotbigdata.fishtankproject.security.JwtTokenProvider;
 import com.iotbigdata.fishtankproject.service.UserService;
@@ -46,34 +47,36 @@ public class UserController {
         }
     }
 
-    @PostMapping("/reset")
-    public ResponseEntity<?> find(@Valid @RequestBody PasswordResetDto dto, BindingResult result) {
-        if (result.hasErrors()) { // 유효성 검사
+    @PostMapping("/verify")
+    public ResponseEntity<?> verifyUser(@Valid @RequestBody VerifyUserDto dto,  BindingResult result) {
+
+        if (result.hasErrors()) { // 에러 확인
             return ResponseEntity.badRequest().body(result.getAllErrors());
         }
 
-        Optional<AppUser> optionalUser = userRepository.findById(dto.getId());
+        Optional<AppUser> optionalUser = userRepository.findByIdAndName(dto.getId(), dto.getName());
 
-        // 존재 여부 먼저 확인
         if (optionalUser.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("message", "아이디가 존재하지 않습니다."));
+            return ResponseEntity.badRequest().body(Map.of("message", "아이디 또는 이름이 일치하지 않습니다."));
+        }
+
+        return ResponseEntity.ok(Map.of("message", "사용자 확인 완료"));
+    }
+
+    @PostMapping("/reset")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody PasswordResetDto dto, BindingResult result) {
+        Optional<AppUser> optionalUser = userRepository.findById(dto.getId());
+        if (result.hasErrors()) { // 에러 확인
+            return ResponseEntity.badRequest().body(result.getAllErrors());
         }
 
         AppUser user = optionalUser.get();
+        user.setPassword(dto.getNewPassword());
+        userService.resetPassword(user);
 
-        // 이름 일치 여부 확인
-        if (!user.getName().equals(dto.getName())) {
-            return ResponseEntity.badRequest().body(Map.of("message", "이름이 일치하지 않습니다."));
-        }
-
-        try {
-            user.setPassword(dto.getNewPassword());
-            userService.resetPassword(user);
-            return ResponseEntity.ok(Map.of("message", "비밀번호 변경 완료")); // 비밀번호 변경 완료 시 body 리턴
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        return ResponseEntity.ok(Map.of("message", "비밀번호 변경 완료"));
     }
+
 
 
     @PostMapping("/login") // 로그인 버튼 누를 시 여기 실행
