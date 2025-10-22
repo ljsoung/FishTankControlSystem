@@ -6,8 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SensorInputDto {
-    private String userId;
-    private Long temperature;
-    private Long doValue;
-    private Long ph;
+    private Double temperature;
+    private Double doValue;
+    private Double ph;
 }

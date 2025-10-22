@@ -57,12 +57,8 @@ class _FishTankLoginState extends State<FishTankLogin> {
 
         print("JWT TOKEN: $token");
 
-        if (!mounted) return;   // 비동기 확인
-        // 메인 화면으로 이동
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainFishTankScreen()),
-        );
+        // 다음 화면으로 이동 예시
+        // Navigator.push(context, MaterialPageRoute(builder: (_) => const DashboardPage()));
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -714,142 +710,6 @@ void showResponseMessage(BuildContext context, http.Response response) {
   } catch (e) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("응답 처리 중 오류: $e")),
-    );
-  }
-}
-
-class MainFishTankScreen extends StatelessWidget {
-  const MainFishTankScreen({super.key});
-
-  // 메인 화면 UI
-  @override
-  Widget build(BuildContext context) {
-    final sw = MediaQuery.of(context).size.width;
-    final sh = MediaQuery.of(context).size.height;
-    final horizontalPadding = (sw * 0.03).clamp(8.0, 24.0);
-    final verticalPadding = (sh * 0.012).clamp(6.0, 16.0);
-
-    return Scaffold(
-      body: SafeArea(
-        child: Container(
-          // ✅ 배경: 그라데이션 효과 적용
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF00BCD4), // 청록색
-                Color(0xFF2196F3), // 밝은 파랑
-                Color(0xFF006064), // 어두운 민트 블루
-              ],
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // ✅ 상단 수질 데이터
-              Padding(
-                padding: EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [ // 추후 센서 데이터와 연동시 고정값 변경
-                    Expanded(child: _buildDataBox("DO: 100")),
-                    SizedBox(width: sw * 0.02),
-                    Expanded(child: _buildDataBox("TDS: 250")),
-                    SizedBox(width: sw * 0.02),
-                    Expanded(child: _buildDataBox("23°C")),
-                  ],
-                ),
-              ),
-
-              // ✅ 중앙 어항 영역 (물고기 없이)
-              Expanded(
-                child: Center(
-                  child: Text(
-                    '🐠 스마트 어항 메인 화면',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.95),
-                    ),
-                  ),
-                ),
-              ),
-
-              //하단 메뉴 버튼 3개
-              Padding(
-                padding: const EdgeInsets.only(bottom: 1),
-                child: SizedBox(
-                  height: 130, // 버튼 2줄을 보여줄 충분한 높이 확보
-                  child: GridView.count(
-                    crossAxisCount: 2, //한 줄에 2개씩
-                    mainAxisSpacing: 10, // 세로 간격
-                    crossAxisSpacing: 10, // 가로 간격
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(), // 스크롤 비활성화
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    childAspectRatio: 3.8, //버튼 비율 (가로 : 세로) - 화면에 맞춰 조절 가능
-                    children: [
-                      _buildMenuButton("꾸미기", Icons.brush),
-                      _buildMenuButton("어종 선택", Icons.pets),
-                      _buildMenuButton("센서 데이터", Icons.sensors),
-                      _buildMenuButton("사료 배식 시간", Icons.alarm),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 🔹 상단 데이터 박스 위젯
-  Widget _buildDataBox(String label) {
-    return Container(
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black38, width: 1),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown, // 텍스트가 박스보다 커지면 자동 축소
-        child: Text(
-          label,
-          textAlign: TextAlign.center, // 여러 줄일 때 중앙 정렬
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 🔹 하단 버튼 위젯
-  Widget _buildMenuButton(String label, IconData icon) {
-    return ElevatedButton.icon(
-      onPressed: () {
-        // TODO: 페이지 이동 기능 추가 가능
-      },
-      icon: Icon(icon, size: 20),
-      label: Text(
-        label,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: Colors.black26),
-        ),
-      ),
     );
   }
 }

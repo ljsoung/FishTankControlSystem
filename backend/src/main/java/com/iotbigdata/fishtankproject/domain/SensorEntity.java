@@ -3,6 +3,6 @@ package com.iotbigdata.fishtankproject.domain;
 import java.time.LocalDateTime;
 
 public interface SensorEntity {
-    Long getSensorValue();
+    Double getSensorValue();
     LocalDateTime getMeasureAt();
 }

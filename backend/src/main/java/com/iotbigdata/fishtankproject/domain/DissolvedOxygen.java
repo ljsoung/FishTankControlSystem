@@ -14,18 +14,18 @@ public class DissolvedOxygen implements SensorEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long number;
+    private int number;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")  // 현재 테이블(FK) 컬럼명
     private AppUser user;
 
-    private Long sensor_value;
+    private Double sensor_value;
 
     private LocalDateTime measureAt;
 
     @Override
-    public Long getSensorValue() {
+    public Double getSensorValue() {
         return sensor_value;
     }
 

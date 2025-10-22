@@ -8,6 +8,8 @@ import com.iotbigdata.fishtankproject.repository.WaterQualityRepository;
 import com.iotbigdata.fishtankproject.repository.WaterTemperatureRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -31,9 +33,13 @@ public class SensorController {
 
     // 센서값 받을 때 이쪽으로 POST 요청
     @PostMapping("/input")
-    public ResponseEntity<?> receiveSensorData(@RequestBody SensorInputDto dto) {
+    public ResponseEntity<?> receiveSensorData(
+            @RequestBody SensorInputDto dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
-        var user = userRepository.findById(dto.getUserId())
+        String userId = userDetails.getUsername(); // JWT 토큰에서 인증된 사용자 ID 가져오기
+
+        var user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
         // 각각의 센서 테이블에 저장
@@ -59,6 +65,35 @@ public class SensorController {
         phRepo.save(ph);
 
         return ResponseEntity.ok(Map.of("message", "센서 데이터 저장 완료"));
+    }
+
+    @GetMapping("/main")
+    public ResponseEntity<?> getMainPageSensorData(@AuthenticationPrincipal UserDetails userDetails) {
+        String userId = userDetails.getUsername();
+        AppUser user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+        // 각각 최신 데이터 1개씩 조회
+        Double tempValue = tempRepo.findTopByUserOrderByMeasureAtDesc(user)
+                .map(WaterTemperature::getSensorValue)
+                .orElse(Double.NaN);
+
+        Double doValue = doRepo.findTopByUserOrderByMeasureAtDesc(user)
+                .map(DissolvedOxygen::getSensorValue)
+                .orElse(Double.NaN);
+
+        Double phValue = phRepo.findTopByUserOrderByMeasureAtDesc(user)
+                .map(WaterQuality::getSensorValue)
+                .orElse(Double.NaN);
+
+        // 결과 JSON
+        Map<String, Object> result = Map.of(
+                "temperature", tempValue,
+                "dissolvedOxygen", doValue,
+                "ph", phValue
+        );
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/data")
@@ -103,6 +138,7 @@ public class SensorController {
         ));
     }
 /*
+    // 옆으로 넘겨서 요청 시 해당 경로로 요청
     @GetMapping("/data/reload")
     public ResponseEntity<?> reloadSensorData(
             @RequestParam String userId,
@@ -113,10 +149,10 @@ public class SensorController {
 
  */
 private <T extends SensorEntity> List<Map<String, Object>> groupSensorData(List<T> data, String range) {
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd HH");
 
     if (range.equals("1h")) {
-        // ✅ 1시간 단위: 그대로 반환
+        // 1시간 단위: 그대로 반환
         return data.stream()
                 .map(d -> {
                     Map<String, Object> map = new HashMap<>();
@@ -127,7 +163,7 @@ private <T extends SensorEntity> List<Map<String, Object>> groupSensorData(List<
                 .toList();
 
     } else if (range.equals("1d")) {
-        // ✅ 1일 단위: 날짜별 평균
+        // 1일 단위: 날짜별 평균
         return data.stream()
                 .collect(Collectors.groupingBy(d -> d.getMeasureAt().toLocalDate()))
                 .entrySet().stream()
@@ -144,7 +180,7 @@ private <T extends SensorEntity> List<Map<String, Object>> groupSensorData(List<
                 .toList();
 
     } else if (range.equals("1w")) {
-        // ✅ 1주 단위: 주차별 평균
+        // 1주 단위: 주차별 평균
         return data.stream()
                 .collect(Collectors.groupingBy(d ->
                         d.getMeasureAt().getYear() + "-W" +
