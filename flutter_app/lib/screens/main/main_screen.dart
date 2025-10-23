@@ -1,17 +1,86 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import '../../widgets/animated_fish.dart';
 
-class MainFishTankScreen extends StatelessWidget {
-  const MainFishTankScreen({super.key});
+class MainFishTankScreen extends StatefulWidget {
+  final String token;
+  const MainFishTankScreen({super.key, required this.token});
 
-  // 메인 화면 UI
+  @override
+  State<MainFishTankScreen> createState() => _MainFishTankScreenState();
+}
+
+class _MainFishTankScreenState extends State<MainFishTankScreen> {
+  double? temperature;
+  double? doValue;
+  double? phValue;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSensorData(); // 화면 시작 시 API 호출
+  }
+
+  Future<void> fetchSensorData() async {
+    try {
+      final response = await http.get(
+        Uri.parse("http://localhost:8080/api/sensor/main"),
+        headers: {
+          "Authorization": "Bearer ${widget.token}",
+          "Content-Type": "application/json",
+        },
+      );
+
+      // ✅ HTTP 상태 코드 확인
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // ✅ 서버 status 확인
+        final status = data["status"];
+
+        if (status == "OK") {
+          final sensor = data["data"];
+          setState(() {
+            temperature = sensor["temperature"]["value"]?.toDouble();
+            doValue = sensor["dissolvedOxygen"]["value"]?.toDouble();
+            phValue = sensor["tds"]["value"]?.toDouble();
+            isLoading = false;
+          });
+        } else if (status == "NO_SENSOR_DATA") { //  센서 데이터가 없는 경우
+          print("센서 데이터 없음: ${data["message"]}");
+          /* 센서가 서버에 최초 센서 데이터 값을 input할 수 있게 센서에게
+           * 요청하는 로직 작성해야 함
+           */
+          setState(() => isLoading = false);
+        } else if (status == "NO_FISH_TYPE") { // 어종이 등록되지 않은 경우
+          print("어종 정보 없음: ${data["message"]}");
+          setState(() => isLoading = false);
+        } else {
+          print("알 수 없는 상태: $status");
+          setState(() => isLoading = false);
+        }
+
+      } else {
+        print("서버 응답 오류: ${response.statusCode}");
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      print("API 요청 오류: $e");
+      setState(() => isLoading = false);
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
-    final base = sw < sh ? sw : sh; // 화면의 짧은 쪽을 기준으로
-    final fishWidth = (base * 0.65).clamp(120.0, 280.0); // 너비: 기준의 65%, 최소120 최대280
-    final fishHeight = fishWidth * 0.6; // 종횡비 유지
+    final base = sw < sh ? sw : sh;
+    final fishWidth = (base * 0.65).clamp(120.0, 280.0);
+    final fishHeight = fishWidth * 0.6;
     final horizontalPadding = (sw * 0.03).clamp(8.0, 24.0);
     final verticalPadding = (sh * 0.012).clamp(6.0, 16.0);
 
@@ -24,31 +93,40 @@ class MainFishTankScreen extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Color(0xFF00BCD4), // 청록색
-                Color(0xFF2196F3), // 밝은 파랑
-                Color(0xFF006064), // 어두운 민트 블루
+                Color(0xFF00BCD4),
+                Color(0xFF2196F3),
+                Color(0xFF006064),
               ],
             ),
           ),
-          child: Column(
+          child: isLoading
+              ? const Center(child: CircularProgressIndicator()) // ✅ 로딩 중
+              : Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // ✅ 상단 수질 데이터
               Padding(
-                padding: EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding),
+                padding: EdgeInsets.symmetric(
+                    vertical: verticalPadding, horizontal: horizontalPadding),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [ // 추후 센서 데이터와 연동시 고정값 변경
-                    Expanded(child: _buildDataBox("DO: 100")),
+                  children: [
+                    Expanded(
+                        child: _buildDataBox(
+                            "DO: ${doValue?.toStringAsFixed(2) ?? '--'}")),
                     SizedBox(width: sw * 0.02),
-                    Expanded(child: _buildDataBox("TDS: 250")),
+                    Expanded(
+                        child: _buildDataBox(
+                            "TDS: ${phValue?.toStringAsFixed(2) ?? '--'}")),
                     SizedBox(width: sw * 0.02),
-                    Expanded(child: _buildDataBox("23°C")),
+                    Expanded(
+                        child: _buildDataBox(
+                            "${temperature?.toStringAsFixed(2) ?? '--'}°C")),
                   ],
                 ),
               ),
 
-              // 중앙 이미지 부분
+              // 중앙 이미지
               Expanded(
                 child: SizedBox.expand(
                   child: Stack(
@@ -130,20 +208,19 @@ class MainFishTankScreen extends StatelessWidget {
                 ),
               ),
 
-
-              //하단 메뉴 버튼
+              // 하단 버튼
               Padding(
                 padding: const EdgeInsets.only(bottom: 1),
                 child: SizedBox(
-                  height: 130, // 버튼 2줄을 보여줄 충분한 높이 확보
+                  height: 130,
                   child: GridView.count(
-                    crossAxisCount: 2, //한 줄에 2개씩
-                    mainAxisSpacing: 10, // 세로 간격
-                    crossAxisSpacing: 10, // 가로 간격
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
                     shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(), // 스크롤 비활성화
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 10),
-                    childAspectRatio: 3.8, //버튼 비율 (가로 : 세로) - 화면에 맞춰 조절 가능
+                    childAspectRatio: 3.8,
                     children: [
                       _buildMenuButton("꾸미기", Icons.brush),
                       _buildMenuButton("어종 선택", Icons.pets),
@@ -171,10 +248,10 @@ class MainFishTankScreen extends StatelessWidget {
         border: Border.all(color: Colors.black38, width: 1),
       ),
       child: FittedBox(
-        fit: BoxFit.scaleDown, // 텍스트가 박스보다 커지면 자동 축소
+        fit: BoxFit.scaleDown,
         child: Text(
           label,
-          textAlign: TextAlign.center, // 여러 줄일 때 중앙 정렬
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -194,7 +271,7 @@ class MainFishTankScreen extends StatelessWidget {
       icon: Icon(icon, size: 20),
       label: Text(
         label,
-        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,

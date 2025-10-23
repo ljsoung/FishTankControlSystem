@@ -38,7 +38,9 @@ class _FishTankLoginState extends State<FishTankLogin> {
         // 메인 화면으로 이동
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const MainFishTankScreen()),
+          MaterialPageRoute(
+            builder: (_) => MainFishTankScreen(token: token),
+          ),
         );
       }
     } catch (e) {
