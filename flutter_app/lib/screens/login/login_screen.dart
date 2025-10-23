@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import '../../utils/response_handler.dart';
 import '../changepw/change_password_screen.dart';
 import '../main/main_screen.dart';

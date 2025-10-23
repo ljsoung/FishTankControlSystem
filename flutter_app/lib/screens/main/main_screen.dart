@@ -1,4 +1,3 @@
-import '../../main.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/animated_fish.dart';
 
