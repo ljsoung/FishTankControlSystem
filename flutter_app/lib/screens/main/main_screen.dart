@@ -131,7 +131,7 @@ class MainFishTankScreen extends StatelessWidget {
               ),
 
 
-              //하단 메뉴 버튼 3개
+              //하단 메뉴 버튼
               Padding(
                 padding: const EdgeInsets.only(bottom: 1),
                 child: SizedBox(
@@ -194,7 +194,7 @@ class MainFishTankScreen extends StatelessWidget {
       icon: Icon(icon, size: 20),
       label: Text(
         label,
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
