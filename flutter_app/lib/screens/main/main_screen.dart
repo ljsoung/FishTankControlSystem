@@ -18,6 +18,11 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   double? phValue;
   bool isLoading = true;
 
+  // ✅ 이상 감지 여부 저장용
+  bool tempAlert = false;
+  bool doAlert = false;
+  bool phAlert = false;
+
   @override
   void initState() {
     super.initState();
@@ -34,35 +39,36 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
         },
       );
 
-      // ✅ HTTP 상태 코드 확인
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
-        // ✅ 서버 status 확인
         final status = data["status"];
 
-        if (status == "OK") {
+        if (status == "OK" || status == "WARNING") {
           final sensor = data["data"];
+          final abnormalItems = List<String>.from(data["abnormalItems"] ?? []);
+
           setState(() {
             temperature = sensor["temperature"]["value"]?.toDouble();
             doValue = sensor["dissolvedOxygen"]["value"]?.toDouble();
             phValue = sensor["tds"]["value"]?.toDouble();
+
+            // ✅ 이상 감지 여부 저장
+            tempAlert = abnormalItems.contains("temperature");
+            doAlert = abnormalItems.contains("dissolvedOxygen");
+            phAlert = abnormalItems.contains("tds");
+
             isLoading = false;
           });
-        } else if (status == "NO_SENSOR_DATA") { //  센서 데이터가 없는 경우
+        } else if (status == "NO_SENSOR_DATA") {
           print("센서 데이터 없음: ${data["message"]}");
-          /* 센서가 서버에 최초 센서 데이터 값을 input할 수 있게 센서에게
-           * 요청하는 로직 작성해야 함
-           */
           setState(() => isLoading = false);
-        } else if (status == "NO_FISH_TYPE") { // 어종이 등록되지 않은 경우
+        } else if (status == "NO_FISH_TYPE") {
           print("어종 정보 없음: ${data["message"]}");
           setState(() => isLoading = false);
         } else {
           print("알 수 없는 상태: $status");
           setState(() => isLoading = false);
         }
-
       } else {
         print("서버 응답 오류: ${response.statusCode}");
         setState(() => isLoading = false);
@@ -72,7 +78,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       setState(() => isLoading = false);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +92,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     return Scaffold(
       body: SafeArea(
         child: Container(
-          // ✅ 배경: 그라데이션 효과 적용
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -100,38 +104,57 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
             ),
           ),
           child: isLoading
-              ? const Center(child: CircularProgressIndicator()) // ✅ 로딩 중
+              ? const Center(child: CircularProgressIndicator())
               : Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // ✅ 상단 수질 데이터
               Padding(
                 padding: EdgeInsets.symmetric(
-                    vertical: verticalPadding, horizontal: horizontalPadding),
+                  vertical: verticalPadding,
+                  horizontal: horizontalPadding,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Expanded(
+                      child: SizedBox(
+                        height: 40,
                         child: _buildDataBox(
-                            "DO: ${doValue?.toStringAsFixed(2) ?? '--'}")),
+                          "DO: ${doValue?.toStringAsFixed(2) ?? '--'}",
+                          isAlert: doAlert,
+                        ),
+                      ),
+                    ),
                     SizedBox(width: sw * 0.02),
                     Expanded(
+                      child: SizedBox(
+                        height: 40,
                         child: _buildDataBox(
-                            "TDS: ${phValue?.toStringAsFixed(2) ?? '--'}")),
+                          "TDS: ${phValue?.toStringAsFixed(2) ?? '--'}",
+                          isAlert: phAlert,
+                        ),
+                      ),
+                    ),
                     SizedBox(width: sw * 0.02),
                     Expanded(
+                      child: SizedBox(
+                        height: 40, //
                         child: _buildDataBox(
-                            "${temperature?.toStringAsFixed(2) ?? '--'}°C")),
+                          "${temperature?.toStringAsFixed(2) ?? '--'}°C",
+                          isAlert: tempAlert,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
 
-              // 중앙 이미지
+              // 중앙 물고기 영역
               Expanded(
                 child: SizedBox.expand(
                   child: Stack(
                     children: [
-                      // 중앙 물고기 (화면비율 대비 크기 설정)
                       Align(
                         alignment: Alignment.center,
                         child: SizedBox(
@@ -143,7 +166,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                           ),
                         ),
                       ),
-
                       Align(
                         alignment: const Alignment(-0.17, -1.3),
                         child: SizedBox(
@@ -155,7 +177,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                           ),
                         ),
                       ),
-
                       Align(
                         alignment: const Alignment(-0.1, -1.3),
                         child: SizedBox(
@@ -167,17 +188,12 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                           ),
                         ),
                       ),
-
-                      // 좌상 (왼쪽 위 대각)
                       AnimatedFish(
                         asset: 'assets/small_fish.gif',
                         alignment: const Alignment(-0.7, -0.6),
                         size: 150,
                         duration: const Duration(seconds: 4),
-                        flipHorizontally: false,
                       ),
-
-                      // 우상 (오른쪽 위 대각)
                       AnimatedFish(
                         asset: 'assets/pattern_fish.gif',
                         alignment: const Alignment(0.7, -0.6),
@@ -185,23 +201,17 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                         duration: const Duration(seconds: 5),
                         flipHorizontally: true,
                       ),
-
-                      // 좌하 (왼쪽 아래 대각)
                       AnimatedFish(
                         asset: 'assets/jellyfish.gif',
                         alignment: const Alignment(-0.7, 0.6),
                         size: 120,
                         duration: const Duration(seconds: 6),
-                        flipHorizontally: false,
                       ),
-
-                      // 우하 (오른쪽 아래 대각)
                       AnimatedFish(
                         asset: 'assets/puffer_fish.gif',
                         alignment: const Alignment(0.7, 0.6),
                         size: 180,
                         duration: const Duration(seconds: 5),
-                        flipHorizontally: false,
                       ),
                     ],
                   ),
@@ -237,37 +247,48 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     );
   }
 
-  // 🔹 상단 데이터 박스 위젯
-  Widget _buildDataBox(String label) {
+  // 🔹 데이터 박스 (이상일 경우 배경색 변경)
+  Widget _buildDataBox(String label, {bool isAlert = false}) {
     return Container(
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.black38, width: 1),
+        color: isAlert ? Colors.redAccent.withOpacity(0.85) : Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isAlert ? Colors.red : Colors.black38,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(1, 2),
+          ),
+        ],
       ),
       child: FittedBox(
         fit: BoxFit.scaleDown,
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isAlert ? Colors.white : Colors.black87,
+            ),
           ),
         ),
       ),
     );
   }
 
-  // 🔹 하단 버튼 위젯
+
+  // 🔹 하단 버튼
   Widget _buildMenuButton(String label, IconData icon) {
     return ElevatedButton.icon(
-      onPressed: () {
-        // TODO: 페이지 이동 기능 추가 가능
-      },
+      onPressed: () {},
       icon: Icon(icon, size: 20),
       label: Text(
         label,
