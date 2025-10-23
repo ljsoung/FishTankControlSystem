@@ -25,13 +25,15 @@ public class SensorService {
     private final DissolvedOxygenRepository doRepo;
     private final WaterQualityRepository phRepo;
     private final UserRepository userRepository;
+    private final SensorTokenService sensorTokenService;
 
-    public ResponseEntity<?> saveSensorData(SensorInputDto dto, UserDetails userDetails) {
-        String userId = userDetails.getUsername(); // JWT 토큰에서 인증된 사용자 ID 가져오기
+    public ResponseEntity<?> saveSensorData(SensorInputDto dto, String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Sensor ")) {
+            return ResponseEntity.status(401).body(Map.of("error", "Device token missing"));
+        }
 
-        var user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
-
+        String token = authHeader.substring(7);
+        AppUser user = sensorTokenService.getUserBySensorToken(token);
         // 각각의 센서 테이블에 저장
         // 수온
         WaterTemperature temp = new WaterTemperature();

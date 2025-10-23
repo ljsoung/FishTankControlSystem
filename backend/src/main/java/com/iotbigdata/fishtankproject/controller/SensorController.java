@@ -18,8 +18,8 @@ public class SensorController {
 
     @PostMapping("/input")
     public ResponseEntity<?> receiveSensorData(@RequestBody SensorInputDto dto,
-                                               @AuthenticationPrincipal UserDetails userDetails) {
-        return sensorService.saveSensorData(dto, userDetails);
+                                               @RequestHeader("Authorization") String authHeader) {
+        return sensorService.saveSensorData(dto, authHeader);
     }
 
     @GetMapping("/main")
