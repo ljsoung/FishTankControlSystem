@@ -84,8 +84,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
     final base = sw < sh ? sw : sh;
-    final fishWidth = (base * 0.65).clamp(120.0, 280.0);
-    final fishHeight = fishWidth * 0.6;
+    final fishWidth = (base * 0.80).clamp(120.0, 280.0);
+    final fishHeight = fishWidth * 0.75;
     final horizontalPadding = (sw * 0.03).clamp(8.0, 24.0);
     final verticalPadding = (sh * 0.012).clamp(6.0, 16.0);
 
@@ -189,29 +189,38 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                         ),
                       ),
                       AnimatedFish(
+                        asset: 'assets/fish.gif',
+                        alignment: const Alignment(0.3, -1),
+                        size: 150,
+                        duration: const Duration(seconds: 7),
+                        flipHorizontally: true,
+                      ),
+                      AnimatedFish(
                         asset: 'assets/small_fish.gif',
-                        alignment: const Alignment(-0.7, -0.6),
+                        alignment: const Alignment(-0.7, -0.5),
                         size: 150,
                         duration: const Duration(seconds: 4),
                       ),
                       AnimatedFish(
                         asset: 'assets/pattern_fish.gif',
-                        alignment: const Alignment(0.7, -0.6),
+                        alignment: const Alignment(0.85, -0.6),
                         size: 150,
                         duration: const Duration(seconds: 5),
                         flipHorizontally: true,
                       ),
                       AnimatedFish(
                         asset: 'assets/jellyfish.gif',
-                        alignment: const Alignment(-0.7, 0.6),
-                        size: 120,
+                        alignment: const Alignment(0.7, 0.5),
+                        size: 150,
                         duration: const Duration(seconds: 6),
+                        flipHorizontally: true,
                       ),
                       AnimatedFish(
                         asset: 'assets/puffer_fish.gif',
-                        alignment: const Alignment(0.7, 0.6),
+                        alignment: const Alignment(-0.6, 0.8),
                         size: 180,
                         duration: const Duration(seconds: 5),
+                        flipHorizontally: true,
                       ),
                     ],
                   ),

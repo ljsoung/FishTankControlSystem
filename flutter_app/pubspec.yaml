@@ -20,6 +20,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/fish.gif
     - assets/fish_tank.png
     - assets/pin_fish.gif
     - assets/jellyfish.gif
