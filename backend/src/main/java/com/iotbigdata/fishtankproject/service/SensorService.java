@@ -158,8 +158,6 @@ public class SensorService {
         groupedData.put("phData", groupSensorData(phData, range));
 
         return ResponseEntity.ok(Map.of(
-                "range", range,
-                "count", count,
                 "startTime", startTime,
                 "endTime", endTime,
                 "data", groupedData

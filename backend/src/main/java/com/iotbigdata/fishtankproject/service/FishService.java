@@ -47,9 +47,7 @@ public class FishService {
         userRepository.save(user);
 
         return ResponseEntity.ok(Map.of(
-                "message", "어종이 성공적으로 등록되었습니다.",
-                "userId", userId,
-                "fishType", fish.getFishType()
+                "message", fish.getFishType() + " 어종으로 등록되었습니다."
         ));
     }
 }
