@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../fish/select_fish_species.dart';
 
 import '../../widgets/animated_fish.dart';
 
@@ -297,12 +298,13 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   // 🔹 하단 버튼
   Widget _buildMenuButton(String label, IconData icon) {
     return ElevatedButton.icon(
-      onPressed: () {},
+      onPressed: () {
+        if (label == "어종 선택") {
+          showFishSelectionSheet(context); //분리된 파일의 함수 호출
+        }
+      },
       icon: Icon(icon, size: 20),
-      label: Text(
-        label,
-        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-      ),
+      label: Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,

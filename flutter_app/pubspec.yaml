@@ -29,3 +29,7 @@ flutter:
     - assets/puffer_fish.gif
     - assets/doolifish.gif
     - assets/hyung.gif
+    - assets/fish_species/구피.png
+    - assets/fish_species/복어.png
+    - assets/fish_species/그린테러.png
+    - assets/fish_species/글라스 캣피쉬.png
