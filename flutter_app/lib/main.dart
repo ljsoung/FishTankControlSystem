@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'screens/login/login_screen.dart';
-import 'screens/main/main_screen.dart';
-import 'screens/fish/feed_time_picker.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  initializeNotifications();
 
   runApp(const FishTankApp());
 }

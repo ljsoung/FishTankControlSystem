@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async'; // 타이머용
 import '../fish/select_fish_species.dart';
+import '../datagraph/sensor_detail_screen.dart';
 import '../fish/feed_time_picker.dart';
 import '../../widgets/animated_fish.dart';
 import 'dart:io' show Platform;
@@ -20,7 +22,9 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   double? phValue;
   bool isLoading = true;
 
-  String? feedTimeText; // 선택된 사료 배식 시간
+  Duration? remainingTime; // ⏳ 남은 시간
+  Timer? timer; // ⏱ 카운트다운용 타이머
+  String? feedTimeText; // 선택된 배식 시간 텍스트
 
 
   // ✅ 이상 감지 여부 저장용
@@ -32,6 +36,12 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   void initState() {
     super.initState();
     fetchSensorData(); // 화면 시작 시 API 호출
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel(); // ✅ 화면 닫힐 때 타이머 종료
+    super.dispose();
   }
 
   Future<void> fetchSensorData() async {
@@ -85,6 +95,55 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       setState(() => isLoading = false);
     }
   }
+
+  // ✅ 카운트다운 시작 함수
+  void startCountdown(Duration duration) {
+    timer?.cancel(); // 기존 타이머 취소
+    remainingTime = duration;
+
+    setState(() {
+      feedTimeText = formatDuration(remainingTime!);
+    });
+
+    timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (remainingTime!.inSeconds <= 1) {
+        t.cancel();
+        setState(() {
+          feedTimeText = "00:00";
+        });
+
+        // ✅ 시간이 다 됐을 때 자동으로 1분 타이머 재시작
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("🐟 밥을 줄 시간이에요!"),
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+        // TODO: 배식기 제어 로직 (Spring Boot -> Raspberry Pi)
+        // ex) await http.post("$baseUrl/api/feeder/start")
+
+        // ✅ 1분 타이머 자동 재시작
+        Future.delayed(const Duration(seconds: 3), () {
+          startCountdown(const Duration(minutes: 1));
+        });
+      } else {
+        setState(() {
+          remainingTime = remainingTime! - const Duration(seconds: 1);
+          feedTimeText = formatDuration(remainingTime!);
+        });
+      }
+    });
+  }
+
+
+  // ✅ Duration → “MM:SS” 형태로 변환
+  String formatDuration(Duration duration) {
+    final m = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return "$m:$s";
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -292,8 +351,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isAlert ? Colors.redAccent.withOpacity(0.85) : Colors.white
-            .withOpacity(0.9),
+        color: isAlert ? Colors.redAccent.withOpacity(0.85) : Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isAlert ? Colors.red : Colors.black38,
@@ -332,15 +390,24 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       // ✅ onPressed 콜백을 async로 선언
       onPressed: () async {
         if (label == "어종 선택") {
-          showFishSelectionSheet(context); // 분리된 파일의 함수 호출
-        }
-
-        if (label == "사료 배식 시간") {
-          final selected = await showFeedTimePicker(context); // async 함수 호출
+          showFishSelectionSheet(context);
+        } else if (label == "센서 데이터") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SensorDetailScreen(),
+            ),
+          );
+        } else if (label == "사료 배식 시간") {
+          final selected = await showFeedTimePicker(context);
           if (selected != null) {
-            setState(() {
-              feedTimeText = selected;
-            });
+            // ✅ feed_time_picker.dart에서 “X시간 X분 후” 문자열을 받아서 Duration으로 변환
+            final match = RegExp(r'(\d+)시간 (\d+)분').firstMatch(selected);
+            if (match != null) {
+              final hours = int.parse(match.group(1)!);
+              final minutes = int.parse(match.group(2)!);
+              startCountdown(Duration(hours: hours, minutes: minutes));
+            }
           }
         }
       },
@@ -373,3 +440,4 @@ String getBaseUrl() {
     return 'http://localhost:8080';
   }
 }
+
