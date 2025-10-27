@@ -28,9 +28,10 @@ public class SensorController {
     }
 
     @GetMapping("/data")
-    public ResponseEntity<?> getSensorData(@AuthenticationPrincipal UserDetails userDetails,
-                                           @RequestParam(defaultValue = "1h") String range,
-                                           @RequestParam(defaultValue = "10") int count) {
+    public ResponseEntity<?> getSensorData(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "1h") String range,
+            @RequestParam(defaultValue = "10") int count) {
         return sensorService.getSensorData(userDetails, range, count);
     }
 }

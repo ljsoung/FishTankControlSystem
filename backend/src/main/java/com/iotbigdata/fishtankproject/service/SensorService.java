@@ -137,9 +137,9 @@ public class SensorService {
         LocalDateTime startTime;
 
         switch (range) {
-            case "1h" -> startTime = endTime.minusHours(count);
-            case "1d" -> startTime = endTime.minusDays(count);
-            case "1w" -> startTime = endTime.minusWeeks(count);
+            case "1h" -> startTime = endTime.minusHours(count - 1);
+            case "1d" -> startTime = endTime.minusDays(count - 1);
+            case "1w" -> startTime = endTime.minusWeeks(count - 1);
             default -> {
                 return ResponseEntity.badRequest().body(Map.of("error", "유효하지 않은 range 값"));
             }
@@ -167,49 +167,66 @@ public class SensorService {
     private <T extends SensorEntity> List<Map<String, Object>> groupSensorData(List<T> data, String range) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd HH");
 
+        if (data == null || data.isEmpty()) {
+            return List.of();
+        }
+
+        // ✅ null 데이터 필터링
+        List<T> filtered = data.stream()
+                .filter(Objects::nonNull)
+                .filter(d -> d.getMeasureAt() != null)
+                .filter(d -> d.getSensorValue() != null)
+                .toList();
+
         if (range.equals("1h")) {
             // 1시간 단위: 그대로 반환
-            return data.stream()
+            return filtered.stream()
                     .map(d -> {
                         Map<String, Object> map = new HashMap<>();
                         map.put("time", d.getMeasureAt().format(formatter));
-                        map.put("value", d.getSensorValue());
+                        map.put("value", String.format("%.1f", d.getSensorValue()));
                         return map;
                     })
                     .toList();
 
         } else if (range.equals("1d")) {
             // 1일 단위: 날짜별 평균
-            return data.stream()
+            return filtered.stream()
                     .collect(Collectors.groupingBy(d -> d.getMeasureAt().toLocalDate()))
                     .entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
                     .map(e -> {
-                        Map<String, Object> map = new HashMap<>();
-                        map.put("date", e.getKey().toString());
-                        map.put("value", e.getValue().stream()
+                        double avg = e.getValue().stream()
+                                .filter(Objects::nonNull)
+                                .filter(d -> d.getSensorValue() != null)
                                 .mapToDouble(SensorEntity::getSensorValue)
                                 .average()
-                                .orElse(0));
+                                .orElse(0.0);
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("date", e.getKey().toString());
+                        map.put("value", String.format("%.1f", avg));
                         return map;
                     })
                     .toList();
 
         } else if (range.equals("1w")) {
             // 1주 단위: 주차별 평균
-            return data.stream()
+            return filtered.stream()
                     .collect(Collectors.groupingBy(d ->
                             d.getMeasureAt().getYear() + "-W" +
                                     d.getMeasureAt().get(ChronoField.ALIGNED_WEEK_OF_YEAR)))
                     .entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
                     .map(e -> {
-                        Map<String, Object> map = new HashMap<>();
-                        map.put("week", e.getKey());
-                        map.put("value", e.getValue().stream()
+                        double avg = e.getValue().stream()
+                                .filter(Objects::nonNull)
+                                .filter(d -> d.getSensorValue() != null)
                                 .mapToDouble(SensorEntity::getSensorValue)
                                 .average()
-                                .orElse(0));
+                                .orElse(0.0);
+                        Map<String, Object> map = new HashMap<>();
+                        map.put("week", e.getKey());
+                        map.put("value", String.format("%.1f", avg));
                         return map;
                     })
                     .toList();
