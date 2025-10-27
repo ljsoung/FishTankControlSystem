@@ -6,7 +6,9 @@ import '../fish/select_fish_species.dart';
 import '../datagraph/sensor_detail_screen.dart';
 import '../fish/feed_time_picker.dart';
 import '../../widgets/animated_fish.dart';
-import 'dart:io' show Platform;
+import '../../utils/network_config.dart';
+import '../../utils/feed_timer_manager.dart';
+
 
 class MainFishTankScreen extends StatefulWidget {
   final String token;
@@ -26,6 +28,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   Timer? timer; // ⏱ 카운트다운용 타이머
   String? feedTimeText; // 선택된 배식 시간 텍스트
 
+  late FeedTimerManager feedTimer;
 
   // ✅ 이상 감지 여부 저장용
   bool tempAlert = false;
@@ -35,12 +38,20 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   @override
   void initState() {
     super.initState();
-    fetchSensorData(); // 화면 시작 시 API 호출
+    fetchSensorData();
+    feedTimer = FeedTimerManager(
+      context: context,
+      onTimeUpdate: () {
+        setState(() {
+          feedTimeText = feedTimer.formatDuration(feedTimer.remainingTime!);
+        });
+      },
+    );
   }
 
   @override
   void dispose() {
-    timer?.cancel(); // ✅ 화면 닫힐 때 타이머 종료
+    feedTimer.dispose();
     super.dispose();
   }
 
@@ -94,54 +105,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       print("API 요청 오류: $e");
       setState(() => isLoading = false);
     }
-  }
-
-  // ✅ 카운트다운 시작 함수
-  void startCountdown(Duration duration) {
-    timer?.cancel(); // 기존 타이머 취소
-    remainingTime = duration;
-
-    setState(() {
-      feedTimeText = formatDuration(remainingTime!);
-    });
-
-    timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (remainingTime!.inSeconds <= 1) {
-        t.cancel();
-        setState(() {
-          feedTimeText = "00:00";
-        });
-
-        // ✅ 시간이 다 됐을 때 자동으로 1분 타이머 재시작
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("🐟 밥을 줄 시간이에요!"),
-            duration: Duration(seconds: 3),
-          ),
-        );
-
-        // TODO: 배식기 제어 로직 (Spring Boot -> Raspberry Pi)
-        // ex) await http.post("$baseUrl/api/feeder/start")
-
-        // ✅ 1분 타이머 자동 재시작
-        Future.delayed(const Duration(seconds: 3), () {
-          startCountdown(const Duration(minutes: 1));
-        });
-      } else {
-        setState(() {
-          remainingTime = remainingTime! - const Duration(seconds: 1);
-          feedTimeText = formatDuration(remainingTime!);
-        });
-      }
-    });
-  }
-
-
-  // ✅ Duration → “MM:SS” 형태로 변환
-  String formatDuration(Duration duration) {
-    final m = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$m:$s";
   }
 
 
@@ -406,7 +369,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
             if (match != null) {
               final hours = int.parse(match.group(1)!);
               final minutes = int.parse(match.group(2)!);
-              startCountdown(Duration(hours: hours, minutes: minutes));
+              feedTimer.startCountdown(Duration(hours: hours, minutes: minutes));
             }
           }
         }
@@ -428,16 +391,4 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   }
 }
 
-String getBaseUrl() {
-  if (Platform.isAndroid) {
-    // ✅ Android 에뮬레이터 환경
-    return 'http://10.0.2.2:8080';
-  } else if (Platform.isIOS) {
-    // ✅ iOS 시뮬레이터
-    return 'http://127.0.0.1:8080';
-  } else {
-    // ✅ Windows / macOS / Web
-    return 'http://localhost:8080';
-  }
-}
 
