@@ -71,49 +71,81 @@ void showFishSelectionSheet(BuildContext context) {
 
           ];
 
-          return SingleChildScrollView(
-            controller: scrollController,
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 50,
-                    height: 5,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[400],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+          String query = ""; // 검색어 저장용
+
+          return StatefulBuilder( // 상태 갱신 가능하게 함
+            builder: (context, setState) {
+              final filteredList = fishList
+                  .where((fish) =>
+                  fish["name"]!.toLowerCase().contains(query.toLowerCase()))
+                  .toList();
+
+              return SingleChildScrollView(
+                controller: scrollController,
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[400],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      const Text(
+                        "🐟 어종 선택",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // 검색창 추가
+                      TextField(
+                        decoration: InputDecoration(
+                          hintText: "어종을 입력하세요.",
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            query = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 15),
+
+                      // 필터링된 리스트 표시
+                      GridView.count(
+                        crossAxisCount: 1,
+                        childAspectRatio: 3.4,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        children: filteredList
+                            .map((fish) => _buildFishChoiceButton(
+                          context,
+                          fish["name"]!,
+                          fish["asset"]!,
+                        ))
+                            .toList(),
+                      ),
+                      const SizedBox(height: 1),
+                    ],
                   ),
-                  const Text(
-                    "🐟 어종 선택",
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  GridView.count(
-                    crossAxisCount: 1,
-                    childAspectRatio: 3.4,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    children: fishList
-                        .map((fish) => _buildFishChoiceButton(
-                      context,
-                      fish["name"]!,
-                      fish["asset"]!,
-                    ))
-                        .toList(),
-                  ),
-                  const SizedBox(height: 1),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         },
       );
