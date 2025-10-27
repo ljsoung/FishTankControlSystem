@@ -137,7 +137,7 @@ public class SensorService {
         LocalDateTime startTime;
 
         switch (range) {
-            case "1h" -> startTime = endTime.minusHours(count - 1);
+            case "1h" -> startTime = endTime.minusHours(count);
             case "1d" -> startTime = endTime.minusDays(count - 1);
             case "1w" -> startTime = endTime.minusWeeks(count - 1);
             default -> {
@@ -165,7 +165,7 @@ public class SensorService {
     }
 
     private <T extends SensorEntity> List<Map<String, Object>> groupSensorData(List<T> data, String range) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd HH");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd HH:mm");
 
         if (data == null || data.isEmpty()) {
             return List.of();
