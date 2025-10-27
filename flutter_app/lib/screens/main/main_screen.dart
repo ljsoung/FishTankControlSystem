@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../fish/select_fish_species.dart';
-
+import '../fish/feed_time_picker.dart';
 import '../../widgets/animated_fish.dart';
+import 'dart:io' show Platform;
 
 class MainFishTankScreen extends StatefulWidget {
   final String token;
@@ -19,6 +20,9 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   double? phValue;
   bool isLoading = true;
 
+  String? feedTimeText; // 선택된 사료 배식 시간
+
+
   // ✅ 이상 감지 여부 저장용
   bool tempAlert = false;
   bool doAlert = false;
@@ -31,9 +35,11 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   }
 
   Future<void> fetchSensorData() async {
+    final baseUrl = getBaseUrl(); // ✅ 환경별 자동 주소 선택
+
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:8080/api/sensor/main"),
+        Uri.parse("$baseUrl/api/sensor/main"),
         headers: {
           "Authorization": "Bearer ${widget.token}",
           "Content-Type": "application/json",
@@ -82,8 +88,14 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sw = MediaQuery.of(context).size.width;
-    final sh = MediaQuery.of(context).size.height;
+    final sw = MediaQuery
+        .of(context)
+        .size
+        .width;
+    final sh = MediaQuery
+        .of(context)
+        .size
+        .height;
     final base = sw < sh ? sw : sh;
     final fishWidth = (base * 0.80).clamp(120.0, 280.0);
     final fishHeight = fishWidth * 0.75;
@@ -115,38 +127,56 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                   vertical: verticalPadding,
                   horizontal: horizontalPadding,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                child: Column(
                   children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 40,
-                        child: _buildDataBox(
-                          "DO: ${doValue?.toStringAsFixed(2) ?? '--'}",
-                          isAlert: doAlert,
+                    // 🔹 기존 수질 데이터 Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: _buildDataBox(
+                              "DO: ${doValue?.toStringAsFixed(2) ?? '--'}",
+                              isAlert: doAlert,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: sw * 0.02),
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: _buildDataBox(
+                              "TDS: ${phValue?.toStringAsFixed(2) ?? '--'}",
+                              isAlert: phAlert,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: sw * 0.02),
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: _buildDataBox(
+                              "${temperature?.toStringAsFixed(2) ?? '--'}°C",
+                              isAlert: tempAlert,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // 🔹 수질 데이터 아래에 "사료 배식 시간" 표시
+                    if (feedTimeText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '사료 배식 시간: $feedTimeText',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
-                    ),
-                    SizedBox(width: sw * 0.02),
-                    Expanded(
-                      child: SizedBox(
-                        height: 40,
-                        child: _buildDataBox(
-                          "TDS: ${phValue?.toStringAsFixed(2) ?? '--'}",
-                          isAlert: phAlert,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: sw * 0.02),
-                    Expanded(
-                      child: SizedBox(
-                        height: 40, //
-                        child: _buildDataBox(
-                          "${temperature?.toStringAsFixed(2) ?? '--'}°C",
-                          isAlert: tempAlert,
-                        ),
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -262,7 +292,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isAlert ? Colors.redAccent.withOpacity(0.85) : Colors.white.withOpacity(0.9),
+        color: isAlert ? Colors.redAccent.withOpacity(0.85) : Colors.white
+            .withOpacity(0.9),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isAlert ? Colors.red : Colors.black38,
@@ -298,13 +329,25 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   // 🔹 하단 버튼
   Widget _buildMenuButton(String label, IconData icon) {
     return ElevatedButton.icon(
-      onPressed: () {
+      // ✅ onPressed 콜백을 async로 선언
+      onPressed: () async {
         if (label == "어종 선택") {
-          showFishSelectionSheet(context); //분리된 파일의 함수 호출
+          showFishSelectionSheet(context); // 분리된 파일의 함수 호출
+        }
+
+        if (label == "사료 배식 시간") {
+          final selected = await showFeedTimePicker(context); // async 함수 호출
+          if (selected != null) {
+            setState(() {
+              feedTimeText = selected;
+            });
+          }
         }
       },
+
       icon: Icon(icon, size: 20),
-      label: Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+      label: Text(label,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -315,5 +358,18 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
         ),
       ),
     );
+  }
+}
+
+String getBaseUrl() {
+  if (Platform.isAndroid) {
+    // ✅ Android 에뮬레이터 환경
+    return 'http://10.0.2.2:8080';
+  } else if (Platform.isIOS) {
+    // ✅ iOS 시뮬레이터
+    return 'http://127.0.0.1:8080';
+  } else {
+    // ✅ Windows / macOS / Web
+    return 'http://localhost:8080';
   }
 }
