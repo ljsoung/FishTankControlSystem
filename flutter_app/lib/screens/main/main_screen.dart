@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../fish/select_fish_species.dart';
+import '../datagraph/sensor_detail_screen.dart';
 
 import '../../widgets/animated_fish.dart';
 
@@ -301,6 +302,13 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       onPressed: () {
         if (label == "어종 선택") {
           showFishSelectionSheet(context); //분리된 파일의 함수 호출
+        } else if (label == "센서 데이터") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SensorDetailScreen(),
+            ),
+          );
         }
       },
       icon: Icon(icon, size: 20),
