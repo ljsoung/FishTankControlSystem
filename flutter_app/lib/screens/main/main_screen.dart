@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async'; // 타이머용
 import '../fish/select_fish_species.dart';
-
+import '../datagraph/sensor_detail_screen.dart';
+import '../fish/feed_time_picker.dart';
 import '../../widgets/animated_fish.dart';
+import '../../utils/network_config.dart';
+import '../../utils/feed_timer_manager.dart';
+
 
 class MainFishTankScreen extends StatefulWidget {
   final String token;
@@ -19,6 +24,12 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   double? phValue;
   bool isLoading = true;
 
+  Duration? remainingTime; // ⏳ 남은 시간
+  Timer? timer; // ⏱ 카운트다운용 타이머
+  String? feedTimeText; // 선택된 배식 시간 텍스트
+
+  late FeedTimerManager feedTimer;
+
   // ✅ 이상 감지 여부 저장용
   bool tempAlert = false;
   bool doAlert = false;
@@ -27,13 +38,29 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   @override
   void initState() {
     super.initState();
-    fetchSensorData(); // 화면 시작 시 API 호출
+    fetchSensorData();
+    feedTimer = FeedTimerManager(
+      context: context,
+      onTimeUpdate: () {
+        setState(() {
+          feedTimeText = feedTimer.formatDuration(feedTimer.remainingTime!);
+        });
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    feedTimer.dispose();
+    super.dispose();
   }
 
   Future<void> fetchSensorData() async {
+    final baseUrl = getBaseUrl(); // ✅ 환경별 자동 주소 선택
+
     try {
       final response = await http.get(
-        Uri.parse("http://localhost:8080/api/sensor/main"),
+        Uri.parse("$baseUrl/api/sensor/main"),
         headers: {
           "Authorization": "Bearer ${widget.token}",
           "Content-Type": "application/json",
@@ -80,10 +107,17 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
-    final sw = MediaQuery.of(context).size.width;
-    final sh = MediaQuery.of(context).size.height;
+    final sw = MediaQuery
+        .of(context)
+        .size
+        .width;
+    final sh = MediaQuery
+        .of(context)
+        .size
+        .height;
     final base = sw < sh ? sw : sh;
     final fishWidth = (base * 0.80).clamp(120.0, 280.0);
     final fishHeight = fishWidth * 0.75;
@@ -115,38 +149,56 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                   vertical: verticalPadding,
                   horizontal: horizontalPadding,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                child: Column(
                   children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 40,
-                        child: _buildDataBox(
-                          "DO: ${doValue?.toStringAsFixed(2) ?? '--'}",
-                          isAlert: doAlert,
+                    // 🔹 기존 수질 데이터 Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: _buildDataBox(
+                              "DO: ${doValue?.toStringAsFixed(2) ?? '--'}",
+                              isAlert: doAlert,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: sw * 0.02),
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: _buildDataBox(
+                              "TDS: ${phValue?.toStringAsFixed(2) ?? '--'}",
+                              isAlert: phAlert,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: sw * 0.02),
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: _buildDataBox(
+                              "${temperature?.toStringAsFixed(2) ?? '--'}°C",
+                              isAlert: tempAlert,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // 🔹 수질 데이터 아래에 "사료 배식 시간" 표시
+                    if (feedTimeText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '사료 배식 시간: $feedTimeText',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
                       ),
-                    ),
-                    SizedBox(width: sw * 0.02),
-                    Expanded(
-                      child: SizedBox(
-                        height: 40,
-                        child: _buildDataBox(
-                          "TDS: ${phValue?.toStringAsFixed(2) ?? '--'}",
-                          isAlert: phAlert,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: sw * 0.02),
-                    Expanded(
-                      child: SizedBox(
-                        height: 40, //
-                        child: _buildDataBox(
-                          "${temperature?.toStringAsFixed(2) ?? '--'}°C",
-                          isAlert: tempAlert,
-                        ),
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -298,13 +350,34 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   // 🔹 하단 버튼
   Widget _buildMenuButton(String label, IconData icon) {
     return ElevatedButton.icon(
-      onPressed: () {
+      // ✅ onPressed 콜백을 async로 선언
+      onPressed: () async {
         if (label == "어종 선택") {
-          showFishSelectionSheet(context); //분리된 파일의 함수 호출
+          showFishSelectionSheet(context);
+        } else if (label == "센서 데이터") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SensorDetailScreen(),
+            ),
+          );
+        } else if (label == "사료 배식 시간") {
+          final selected = await showFeedTimePicker(context);
+          if (selected != null) {
+            // ✅ feed_time_picker.dart에서 “X시간 X분 후” 문자열을 받아서 Duration으로 변환
+            final match = RegExp(r'(\d+)시간 (\d+)분').firstMatch(selected);
+            if (match != null) {
+              final hours = int.parse(match.group(1)!);
+              final minutes = int.parse(match.group(2)!);
+              feedTimer.startCountdown(Duration(hours: hours, minutes: minutes));
+            }
+          }
         }
       },
+
       icon: Icon(icon, size: 20),
-      label: Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+      label: Text(label,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -317,3 +390,5 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     );
   }
 }
+
+

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'screens/login/login_screen.dart';
-import 'screens/main/main_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const FishTankApp());
 }
 
