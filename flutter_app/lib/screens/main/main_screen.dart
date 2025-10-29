@@ -56,11 +56,10 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   }
 
   Future<void> fetchSensorData() async {
-    final baseUrl = getBaseUrl(); // ✅ 환경별 자동 주소 선택
 
     try {
       final response = await http.get(
-        Uri.parse("$baseUrl/api/sensor/main"),
+        Uri.parse("http://192.168.34.17:8080/api/sensor/main"),
         headers: {
           "Authorization": "Bearer ${widget.token}",
           "Content-Type": "application/json",
@@ -70,31 +69,89 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final status = data["status"];
+        final sensor = data["data"]; // ✅ 공통으로 센서 데이터 참조
+
+        // ✅ 센서값 기본 세팅 (어종 없어도 표시)
+        if (sensor != null) {
+          setState(() {
+            temperature = (sensor["temperature"]["value"] ?? 0).toDouble();
+            doValue = (sensor["dissolvedOxygen"]["value"] ?? 0).toDouble();
+            phValue = (sensor["tds"]["value"] ?? 0).toDouble();
+          });
+        }
 
         if (status == "OK" || status == "WARNING") {
-          final sensor = data["data"];
           final abnormalItems = List<String>.from(data["abnormalItems"] ?? []);
 
           setState(() {
-            temperature = sensor["temperature"]["value"]?.toDouble();
-            doValue = sensor["dissolvedOxygen"]["value"]?.toDouble();
-            phValue = sensor["tds"]["value"]?.toDouble();
-
-            // ✅ 이상 감지 여부 저장
             tempAlert = abnormalItems.contains("temperature");
             doAlert = abnormalItems.contains("dissolvedOxygen");
             phAlert = abnormalItems.contains("tds");
-
             isLoading = false;
           });
-        } else if (status == "NO_SENSOR_DATA") {
-          print("센서 데이터 없음: ${data["message"]}");
+
+          print("✅ 센서 데이터 로드 완료 (상태: $status)");
+        }
+        else if (status == "NO_FISH_TYPE") {
+          final msg = data["message"] ?? "어종 정보가 없습니다. 먼저 어종을 등록해주세요.";
+          print("🐠 어종 정보 없음: $msg");
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: Colors.blueAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+
+          // ✅ 어종이 없어도 센서 데이터는 표시
           setState(() => isLoading = false);
-        } else if (status == "NO_FISH_TYPE") {
-          print("어종 정보 없음: ${data["message"]}");
-          setState(() => isLoading = false);
-        } else {
-          print("알 수 없는 상태: $status");
+        }
+        else if (status == "NO_SENSOR_DATA") {
+          final msg = data["message"] ?? "센서 데이터가 존재하지 않습니다.";
+          print("⚠️ 센서 데이터 없음: $msg");
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: Colors.orangeAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+
+          // 디바이스 자동 등록 로직
+          final deviceResponse = await http.post(
+            Uri.parse("http://192.168.34.17:8080/api/device/register"),
+            headers: {
+              "Authorization": "Bearer ${widget.token}",
+              "Content-Type": "application/json",
+            },
+          );
+
+          if (deviceResponse.statusCode == 200) {
+            final deviceData = jsonDecode(deviceResponse.body);
+            final sensorToken = deviceData["sensorToken"];
+
+            print("센서 디바이스 등록 완료: $sensorToken");
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("✅ 센서 디바이스 자동 등록 완료"),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                duration: Duration(seconds: 3),
+              ),
+            );
+
+            setState(() => isLoading = true);
+            await Future.delayed(const Duration(seconds: 2));
+            await fetchSensorData();
+          }
+        }
+        else {
+          print("⚠️ 알 수 없는 상태 코드: $status");
           setState(() => isLoading = false);
         }
       } else {
@@ -105,6 +162,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       print("API 요청 오류: $e");
       setState(() => isLoading = false);
     }
+
   }
 
 
