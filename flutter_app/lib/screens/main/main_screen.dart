@@ -56,6 +56,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   }
 
   Future<void> fetchSensorData() async {
+    final baseUrl = getBaseUrl(); // ✅ 환경별 자동 주소 선택
 
     try {
       final response = await http.get(
@@ -81,12 +82,19 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
         }
 
         if (status == "OK" || status == "WARNING") {
+          final sensor = data["data"];
           final abnormalItems = List<String>.from(data["abnormalItems"] ?? []);
 
           setState(() {
+            temperature = sensor["temperature"]["value"]?.toDouble();
+            doValue = sensor["dissolvedOxygen"]["value"]?.toDouble();
+            phValue = sensor["tds"]["value"]?.toDouble();
+
+            // 이상 감지 여부 저장
             tempAlert = abnormalItems.contains("temperature");
             doAlert = abnormalItems.contains("dissolvedOxygen");
             phAlert = abnormalItems.contains("tds");
+
             isLoading = false;
           });
 
@@ -162,7 +170,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       print("API 요청 오류: $e");
       setState(() => isLoading = false);
     }
-
   }
 
 
