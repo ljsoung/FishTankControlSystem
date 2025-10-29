@@ -6,8 +6,9 @@ import '../fish/select_fish_species.dart';
 import '../datagraph/sensor_detail_screen.dart';
 import '../fish/feed_time_picker.dart';
 import '../../widgets/animated_fish.dart';
-import '../../utils/network_config.dart';
 import '../../utils/feed_timer_manager.dart';
+import '../fish/decoration_sheet.dart';
+
 
 
 class MainFishTankScreen extends StatefulWidget {
@@ -56,7 +57,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   }
 
   Future<void> fetchSensorData() async {
-    final baseUrl = getBaseUrl(); // ✅ 환경별 자동 주소 선택
 
     try {
       final response = await http.get(
@@ -379,7 +379,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isAlert ? Colors.redAccent.withOpacity(0.85) : Colors.white.withOpacity(0.9),
+        color: isAlert ? Colors.redAccent.withOpacity(0.85) : Colors.white
+            .withOpacity(0.9),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isAlert ? Colors.red : Colors.black38,
@@ -417,8 +418,16 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     return ElevatedButton.icon(
       // ✅ onPressed 콜백을 async로 선언
       onPressed: () async {
-        if (label == "어종 선택") {
-          showFishSelectionSheet(context);
+        if (label == "꾸미기") {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => DecorationSheet(), // const 제거!
+          );
+
+        } else if (label == "어종 선택") {
+          showFishSelectionSheet(context, widget.token);
         } else if (label == "센서 데이터") {
           Navigator.push(
             context,
@@ -434,7 +443,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
             if (match != null) {
               final hours = int.parse(match.group(1)!);
               final minutes = int.parse(match.group(2)!);
-              feedTimer.startCountdown(Duration(hours: hours, minutes: minutes));
+              feedTimer.startCountdown(
+                  Duration(hours: hours, minutes: minutes));
             }
           }
         }
