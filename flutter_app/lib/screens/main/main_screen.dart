@@ -8,6 +8,8 @@ import '../fish/feed_time_picker.dart';
 import '../../widgets/animated_fish.dart';
 import '../../utils/network_config.dart';
 import '../../utils/feed_timer_manager.dart';
+import '../fish/decoration_sheet.dart';
+
 
 
 class MainFishTankScreen extends StatefulWidget {
@@ -56,7 +58,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   }
 
   Future<void> fetchSensorData() async {
-
     try {
       final response = await http.get(
         Uri.parse("http://192.168.34.17:8080/api/sensor/main"),
@@ -313,7 +314,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isAlert ? Colors.redAccent.withOpacity(0.85) : Colors.white.withOpacity(0.9),
+        color: isAlert ? Colors.redAccent.withOpacity(0.85) : Colors.white
+            .withOpacity(0.9),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isAlert ? Colors.red : Colors.black38,
@@ -349,9 +351,16 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   // 🔹 하단 버튼
   Widget _buildMenuButton(String label, IconData icon) {
     return ElevatedButton.icon(
-      // ✅ onPressed 콜백을 async로 선언
       onPressed: () async {
-        if (label == "어종 선택") {
+        if (label == "꾸미기") {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => DecorationSheet(), // const 제거!
+          );
+
+        } else if (label == "어종 선택") {
           showFishSelectionSheet(context);
         } else if (label == "센서 데이터") {
           Navigator.push(
@@ -363,17 +372,16 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
         } else if (label == "사료 배식 시간") {
           final selected = await showFeedTimePicker(context);
           if (selected != null) {
-            // ✅ feed_time_picker.dart에서 “X시간 X분 후” 문자열을 받아서 Duration으로 변환
             final match = RegExp(r'(\d+)시간 (\d+)분').firstMatch(selected);
             if (match != null) {
               final hours = int.parse(match.group(1)!);
               final minutes = int.parse(match.group(2)!);
-              feedTimer.startCountdown(Duration(hours: hours, minutes: minutes));
+              feedTimer.startCountdown(
+                  Duration(hours: hours, minutes: minutes));
             }
           }
         }
       },
-
       icon: Icon(icon, size: 20),
       label: Text(label,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
