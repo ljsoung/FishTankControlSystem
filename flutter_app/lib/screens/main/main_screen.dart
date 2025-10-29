@@ -56,11 +56,10 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   }
 
   Future<void> fetchSensorData() async {
-    final baseUrl = getBaseUrl(); // ✅ 환경별 자동 주소 선택
 
     try {
       final response = await http.get(
-        Uri.parse("$baseUrl/api/sensor/main"),
+        Uri.parse("http://192.168.34.17:8080/api/sensor/main"),
         headers: {
           "Authorization": "Bearer ${widget.token}",
           "Content-Type": "application/json",
@@ -80,7 +79,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
             doValue = sensor["dissolvedOxygen"]["value"]?.toDouble();
             phValue = sensor["tds"]["value"]?.toDouble();
 
-            // ✅ 이상 감지 여부 저장
+            // 이상 감지 여부 저장
             tempAlert = abnormalItems.contains("temperature");
             doAlert = abnormalItems.contains("dissolvedOxygen");
             phAlert = abnormalItems.contains("tds");
