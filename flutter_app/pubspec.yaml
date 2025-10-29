@@ -58,7 +58,7 @@ flutter:
     - assets/fish_species/플레이코.png
     - assets/fish_species/블랙 몰리.png
     - assets/fish_species/블랙 무어.png
-    - assets/fish_species/사이아미즈 알지이터.png
+    - assets/fish_species/알지이터.png
     - assets/fish_species/세베룸.png
     - assets/fish_species/세일핀 몰리.png
     - assets/fish_species/소드테일.png
@@ -72,11 +72,9 @@ flutter:
     - assets/fish_species/오스카.png
     - assets/fish_species/오토싱클루스.png
     - assets/fish_species/일렉트릭 블루 아카라.png
-    - assets/fish_species/자이언트 베타.png
     - assets/fish_species/잭댐프시.png
-    - assets/fish_species/제브라 다니오.png
+    - assets/fish_species/다니오.png
     - assets/fish_species/로치.png
-    - assets/fish_species/차이니즈 알지이터.png
     - assets/fish_species/카디날 테트라.png
     - assets/fish_species/크리벤시스.png
     - assets/fish_species/파이어마우스.png
