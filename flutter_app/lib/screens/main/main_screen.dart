@@ -285,7 +285,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                         ),
                       ),
                       Align(
-                        alignment: const Alignment(-0.17, -1.3),
+                        alignment: const Alignment(-0.17, -1.36),
                         child: SizedBox(
                           width: 70,
                           height: 40,
@@ -296,7 +296,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                         ),
                       ),
                       Align(
-                        alignment: const Alignment(-0.1, -1.3),
+                        alignment: const Alignment(-0.1, -1.36),
                         child: SizedBox(
                           width: 70,
                           height: 40,
