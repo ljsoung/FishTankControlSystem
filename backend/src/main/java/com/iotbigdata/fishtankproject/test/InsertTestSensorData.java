@@ -11,7 +11,7 @@ public class InsertTestSensorData {
     private static final String DB_USER = "root";
     private static final String DB_PASSWORD = "jwejweiya"; // ← 본인 MySQL 비밀번호로 변경
 
-    private static final String USER_ID = "prod02-1"; // 실제 user 테이블에 존재하는 ID로 변경
+    private static final String USER_ID = "fishguy"; // 실제 user 테이블에 존재하는 ID로 변경
     private static final Random random = new Random();
 
     public static void main(String[] args) {
@@ -19,8 +19,8 @@ public class InsertTestSensorData {
             Class.forName("com.mysql.cj.jdbc.Driver");
             System.out.println("✅ DB 연결 성공");
 
-            LocalDateTime start = LocalDateTime.of(2025, 10, 30, 0, 0);
-            LocalDateTime end = LocalDateTime.of(2025, 10, 30, 16, 0);
+            LocalDateTime start = LocalDateTime.of(2025, 8, 1, 0, 0);
+            LocalDateTime end = LocalDateTime.of(2025, 10, 29, 23, 0);
 
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 

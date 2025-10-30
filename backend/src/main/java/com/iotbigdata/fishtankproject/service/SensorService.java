@@ -198,7 +198,7 @@ public class SensorService {
                                 .average()
                                 .orElse(0.0);
                         Map<String, Object> map = new HashMap<>();
-                        map.put("date", e.getKey().toString());
+                        map.put("time", e.getKey().toString());
                         map.put("value", String.format("%.1f", avg));
                         return map;
                     })
@@ -220,7 +220,7 @@ public class SensorService {
                                 .average()
                                 .orElse(0.0);
                         Map<String, Object> map = new HashMap<>();
-                        map.put("week", e.getKey());
+                        map.put("time", e.getKey());
                         map.put("value", String.format("%.1f", avg));
                         return map;
                     })
