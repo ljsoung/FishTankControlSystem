@@ -14,11 +14,17 @@ class FeedTimerManager {
     required this.onTimeUpdate,
   });
 
-  // ✅ Duration → “MM:SS” 형태로 변환
+  // “HH:MM:SS” 형태로 변환
   String formatDuration(Duration duration) {
+    final h = duration.inHours.toString().padLeft(2, '0');
     final m = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return "$m:$s";
+
+    if (duration.inHours > 0) {
+      return "$h:$m:$s";
+    } else {
+      return "$m:$s";
+    }
   }
 
   // ✅ 카운트다운 시작

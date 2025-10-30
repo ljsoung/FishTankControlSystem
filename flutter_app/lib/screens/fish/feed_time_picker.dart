@@ -2,8 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 Future<String?> showFeedTimePicker(BuildContext context) async {
-  int selectedHour = 0;
-  int selectedMinute = 0;
+  Duration selectedDuration = const Duration(hours: 0, minutes: 0);
 
   return showModalBottomSheet<String>(
     context: context,
@@ -27,8 +26,7 @@ Future<String?> showFeedTimePicker(BuildContext context) async {
                 mode: CupertinoTimerPickerMode.hm,
                 initialTimerDuration: const Duration(hours: 0, minutes: 0),
                 onTimerDurationChanged: (Duration newDuration) {
-                  selectedHour = newDuration.inHours;
-                  selectedMinute = newDuration.inMinutes % 60;
+                  selectedDuration = newDuration; // ✅ 전체 Duration 저장
                 },
               ),
             ),
@@ -36,9 +34,11 @@ Future<String?> showFeedTimePicker(BuildContext context) async {
               padding: const EdgeInsets.all(10.0),
               child: ElevatedButton(
                 onPressed: () {
-                  // ✅ 포맷된 시간 텍스트 반환
+                  final hours = selectedDuration.inHours;
+                  final minutes = selectedDuration.inMinutes % 60;
                   final formatted =
-                      '${selectedHour.toString().padLeft(2, '0')}시간 ${selectedMinute.toString().padLeft(2, '0')}분 후';
+                      '${hours.toString().padLeft(2, '0')}시간 ${minutes.toString().padLeft(2, '0')}분 후';
+
                   Navigator.pop(context, formatted);
 
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -51,8 +51,7 @@ Future<String?> showFeedTimePicker(BuildContext context) async {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
                 ),
                 child: const Text('확인', style: TextStyle(fontSize: 18)),
               ),
@@ -63,3 +62,4 @@ Future<String?> showFeedTimePicker(BuildContext context) async {
     },
   );
 }
+
