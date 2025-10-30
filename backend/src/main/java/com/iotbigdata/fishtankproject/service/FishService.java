@@ -42,9 +42,16 @@ public class FishService {
         Fish fish = fishRepository.findById(fishType)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 어종입니다."));
 
-        // 사용자에게 어종 등록
+        // ✅ 이미 등록된 어종이 있을 경우 -> 변경 처리
+        String beforeType = user.getFishType() != null ? user.getFishType().getFishType() : null;
         user.setFishType(fish);
         userRepository.save(user);
+
+        if (beforeType != null) {
+            return ResponseEntity.ok(Map.of(
+                    "message", "어종이 " + beforeType + " → " + fish.getFishType() + " 으로 변경되었습니다."
+            ));
+        }
 
         return ResponseEntity.ok(Map.of(
                 "message", fish.getFishType() + " 어종으로 등록되었습니다."

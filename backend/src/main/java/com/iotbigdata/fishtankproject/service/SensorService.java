@@ -75,26 +75,34 @@ public class SensorService {
 
         // 모든 센서값이 존재하지 않으면 → 초기 요청 상태로 간주
         if (tempValue.isEmpty() && doValue.isEmpty() && phValue.isEmpty()) {
-            return ResponseEntity.status(404).body(Map.of(
+            return ResponseEntity.ok(Map.of(
                     "status", "NO_SENSOR_DATA",
                     "message", "해당 계정의 센서 데이터가 존재하지 않습니다. 초기 데이터 요청이 필요합니다."
             ));
         }
 
-        Fish fish = user.getFishType();
-
-        // 어종 없을 시
-        if (fish == null) {
-            return ResponseEntity.status(400).body(Map.of(
-                    "status", "NO_FISH_TYPE",
-                    "message", "사용자에게 등록된 어종 정보가 없습니다. 회원정보에서 어종을 먼저 등록해주세요."
-            ));
-        }
-
+        // ✅ 센서값 데이터는 항상 구성 (어종 없어도 보이게)
         double t = tempValue.orElse(Double.NaN);
         double d = doValue.orElse(Double.NaN);
         double p = phValue.orElse(Double.NaN);
 
+        Map<String, Object> data = Map.of(
+                "temperature", Map.of("value", t),
+                "dissolvedOxygen", Map.of("value", d),
+                "tds", Map.of("value", p)
+        );
+
+        // ✅ 어종이 없는 경우에도 센서값을 포함해서 응답
+        Fish fish = user.getFishType();
+        if (fish == null) {
+            return ResponseEntity.ok(Map.of(
+                    "status", "NO_FISH_TYPE",
+                    "message", "사용자에게 등록된 어종 정보가 없습니다. 어종을 먼저 등록해주세요.",
+                    "data", data // 🔹 센서값도 포함!
+            ));
+        }
+
+        // 어종이 있을 경우 범위 검사
         boolean tempAlert = (t < fish.getMinTemp() || t > fish.getMaxTemp());
         boolean doAlert = (d < fish.getMinDo() || d > fish.getMaxDo());
         boolean tdsAlert = (p < fish.getMinTds() || p > fish.getMaxTds());
@@ -104,22 +112,8 @@ public class SensorService {
         if (doAlert) abnormalItems.add("dissolvedOxygen");
         if (tdsAlert) abnormalItems.add("tds");
 
-        // 결과 구성
-        Map<String, Object> data = Map.of(
-                "temperature", Map.of(
-                        "value", t
-                ),
-                "dissolvedOxygen", Map.of(
-                        "value", d
-                ),
-                "tds", Map.of(
-                        "value", p
-                )
-        );
-
         String status = abnormalItems.isEmpty() ? "OK" : "WARNING";
 
-        // 최종 응답
         return ResponseEntity.ok(Map.of(
                 "status", status,
                 "fishType", fish.getFishType(),
@@ -127,6 +121,7 @@ public class SensorService {
                 "data", data
         ));
     }
+
 
     public ResponseEntity<?> getSensorData(UserDetails userDetails, String range, int count) {
         String userId = userDetails.getUsername();
