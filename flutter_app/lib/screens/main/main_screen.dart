@@ -36,6 +36,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   bool doAlert = false;
   bool phAlert = false;
 
+
   @override
   void initState() {
     super.initState();
@@ -432,7 +433,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const SensorDetailScreen(),
+              builder: (context) => SensorDetailScreen(token: widget.token),
             ),
           );
         } else if (label == "사료 배식 시간") {

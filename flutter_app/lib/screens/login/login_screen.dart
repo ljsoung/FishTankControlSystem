@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../utils/response_handler.dart';
 import '../changepw/change_password_screen.dart';
+import '../datagraph/sensor_detail_screen.dart';
 import '../main/main_screen.dart';
 import '../signup/signup_screen.dart';
 import 'login_api.dart';

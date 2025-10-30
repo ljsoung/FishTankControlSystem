@@ -1,65 +1,223 @@
+import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'dart:math';
+import 'package:http/http.dart' as http;
 
+/// ─────────────────────────────────────────────────────────────────────────
+/// SensorDetailScreen
+/// - 좌우 드래그로 과거/현재 탐색
+/// - 왼쪽 끝 도달 시 10포인트씩 과거 데이터 추가 로딩
+/// - 파라미터/범위 전환 시 서버 재요청 후 차트 리빌드
+/// ─────────────────────────────────────────────────────────────────────────
 class SensorDetailScreen extends StatefulWidget {
-  const SensorDetailScreen({super.key});
+  final String token;
+  const SensorDetailScreen({super.key, required this.token});
 
   @override
   State<SensorDetailScreen> createState() => _SensorDetailScreenState();
 }
 
 class _SensorDetailScreenState extends State<SensorDetailScreen> {
-  // 선택 상태
-  String selectedParameter = '수온'; // '수온' / '수질' / '용존산소'
-  String selectedRange = '1시간 단위'; // '1시간 단위' / '하루 단위' / '일주일 단위'
+  // ── Range 옵션: 라벨, API코드, 기본 뷰윈도 사이즈
+  static const _rangeOptions = [
+    ('1시간 단위', '1h', 5),
+    ('하루 단위', '1d', 5),
+    ('일주일 단위', '1w', 5),
+  ];
 
-  bool isParameterOpen = true;
-  bool isRangeOpen = false;
+  // === 선택 상태 ===
+  String selectedParameter = '수온'; // '수온'/'수질'/'용존산소'
+  String selectedRangeCode = '1h'; // '1시간 단위: 1h'/'하루 단위: 1d'/'일주일 단위: 1w'
 
-  // 샘플 데이터 생성 (실제선은 서버/센서 값으로 바꿔서 사용)
-  List<FlSpot> _generateSample(String param, String range) {
-    final rnd = Random(param.hashCode ^ range.hashCode);
-    int points;
-    double xStep;
-    if (range == '1시간 단위') {
-      points = 5; // 12~24시 등 13점 (예)
-      xStep = 1;
-    } else if (range == '일주일 단위') {
-      points = 8; // 7일 + 시작점
-      xStep = 1;
-    } else {
-      points = 30; // 한달(예시)
-      xStep = 1;
-    }
+  // === 서버 설정 ===
+  final String _base = 'http://192.168.34.17:8080';
+  int count = 10; // 서버에서 가져온 포인트 수(최초 10)
+  bool _isLoading = false;
 
-    double base;
-    if (param == '수온') base = 20; // 섭씨 기준
-    else if (param == '수질') base = 250; // TDS 기준
-    else base = 8; // DO 기준
+  // === 원본 데이터 저장 ===
+  List<String> _labels = [];    // index 0 = 가장 과거
+  List<double> _values = [];
 
-    return List.generate(points, (i) {
-      final jitter = (rnd.nextDouble() - 0.5) * (base * 0.12);
-      final value = base + jitter + sin(i / max(1, points / 3)) * (base * 0.12);
-      return FlSpot(i * xStep.toDouble(), double.parse(value.toStringAsFixed(2)));
-    });
+  // === 뷰포트(창) 설정 ===
+  // 화면에 보이는 구간 길이(포인트 단위). 범위에 따라 기본값 다르게.
+  int _viewWindow = 10;
+  // 현재 창의 시작 인덱스(0.._values.length - _viewWindow)
+  int _viewStart = 0;
+
+  // === 드래그-픽셀 변환 보정 ===
+  // 한 포인트를 화면에서 몇 픽셀로 볼지(= 차트 width / _viewWindow)
+  double _pxPerPoint = 20;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAndBuild(reset: true); // 최초 로드
   }
 
-  // 차트 스타일 데이터 생성
-  LineChartData _makeLineChartData(List<FlSpot> spots, String param) {
-    final minY = spots.map((s) => s.y).reduce(min);
-    final maxY = spots.map((s) => s.y).reduce(max);
-    final yMargin = (maxY - minY) * 0.15;
+  // 코드 기준으로 뷰윈도 조정
+  void _syncViewWindowWithRange() {
+    final opt = _rangeOptions.firstWhere((o) => o.$2 == selectedRangeCode);
+    _viewWindow = opt.$3;
+  }
+
+  // 파라미터 → 서버 키 매핑
+  String get _paramKey {
+    if (selectedParameter == '수온') return 'temperatureData';
+    if (selectedParameter == '수질') return 'phData';
+    return 'doData'; // 용존산소
+  }
+
+  // range → 서버 쿼리 문자열 (코드 그대로)
+  String get _rangeQuery => selectedRangeCode;
+
+  Future<void> _fetchAndBuild({required bool reset}) async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    try {
+      if (reset) count = 10;
+
+      final uri = Uri.parse(
+        '$_base/api/sensor/data?range=${Uri.encodeComponent(_rangeQuery)}&count=$count',
+      );
+
+      final res = await http.get(uri,
+        headers: {
+          'Accept': 'application/json',
+          if (widget.token.isNotEmpty) 'Authorization': 'Bearer ${widget.token}',
+          // "Authorization": "Bearer ${widget.token}",
+          // "Content-Type": "application/json"
+        }
+      );
+      if (res.statusCode != 200) {
+        throw Exception('HTTP ${res.statusCode}');
+      }
+
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      final data = body['data'] as Map<String, dynamic>?;
+
+      if (data == null || data[_paramKey] == null) {
+        throw Exception('서버 응답 포맷 오류: $_paramKey 없음');
+      }
+
+      final List<dynamic> arr = data[_paramKey] as List<dynamic>;
+      final labels = <String>[];
+      final values = <double>[];
+
+      for (final item in arr) {
+        final timeStr = (item['time'] ?? '').toString();
+        final valStr = (item['value'] ?? '').toString();
+        final val = double.tryParse(valStr);
+        if (val != null) {
+          labels.add(timeStr);
+          values.add(val);
+        }
+      }
+
+      if (reset) {
+        _labels = labels;
+        _values = values;
+        _viewStart = max(0, _values.length - _viewWindow);
+      } else {
+        // 이전에 불러온 것보다 더 많이 불러온 상태이므로 전체를 교체
+        final oldLen = _values.length;
+        _labels = labels;
+        _values = values;
+        final added = _values.length - oldLen;
+        _viewStart += added;    // 현재 화면 위치 유지
+        _viewStart = _clampViewStart(_viewStart);
+      }
+    } catch (e) {
+      // 간단 알림
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('데이터 로드 실패: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  int _clampViewStart(int v) {
+    if (_values.isEmpty) return 0;
+    final maxStart = max(0, _values.length - _viewWindow);
+    return v.clamp(0, maxStart);
+  }
+
+  // 왼쪽 끝 도달 시 더 과거 데이터 10포인트 추가 로드
+  Future<void> _maybeLoadMoreOlder() async {
+    if (_isLoading) return;
+    // 이미 제일 왼쪽인데 더 왼쪽으로 가려 한다면
+    if (_viewStart <= 0) {
+      // 1년 제한은 서버에서 판단/절단한다고 가정. 필요 시 여기서도 가드 가능.
+      count += 10;
+      await _fetchAndBuild(reset: false);
+    }
+  }
+
+  // 드래그 처리: 화면 픽셀 → 데이터 포인트 이동량 변환
+  void _onHorizontalDragUpdate(DragUpdateDetails d) {
+    if (_values.isEmpty) return;
+    final dx = d.delta.dx; // 왼쪽으로 밀면 음수
+    final deltaPoints = -(dx / _pxPerPoint);
+    int nextStart = _viewStart + deltaPoints.round();
+    nextStart = _clampViewStart(nextStart);
+    setState(() => _viewStart = nextStart);
+
+    // 만약 "실제로 더 왼쪽으로 가려 했다"가 감지되면 추가 로드 시도
+    if (dx < 0 && _viewStart == 0) {
+      _maybeLoadMoreOlder();
+    }
+  }
+
+  // 차트에 넣을 현재 뷰포트 스팟 구성
+  List<FlSpot> _viewportSpots() {
+    final spots = <FlSpot>[];
+    if (_values.isEmpty) return spots;
+
+    final end = min(_values.length, _viewStart + _viewWindow);
+    for (int i = _viewStart; i < end; i++) {
+      // x는 전역 인덱스 i를 그대로 쓰되, 차트 minX/maxX에 맞춰 상대좌표로 보이게 처리
+      final localX = (i - _viewStart).toDouble();
+      spots.add(FlSpot(localX, _values[i]));
+    }
+    return spots;
+  }
+
+  // 뷰포트에 맞춘 라벨 함수
+  String _labelForLocalX(int localX) {
+    final idx = _viewStart + localX;
+    if (idx < 0 || idx >= _labels.length) return '';
+    return _labels[idx];
+  }
+
+  LineChartData _makeLineChartData(List<FlSpot> spots) {
+    if (spots.isEmpty) {
+      return LineChartData(
+        minX: 0, maxX: 1, minY: 0, maxY: 1,
+        titlesData: const FlTitlesData(show: false),
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [],
+      );
+    }
+
+    final ys = spots.map((s) => s.y).toList();
+    final minYv = ys.reduce(min);
+    final maxYv = ys.reduce(max);
+    final yMargin = max(0.0001, (maxYv - minYv) * 0.15);
 
     return LineChartData(
-      minX: spots.first.x,
-      maxX: spots.last.x,
-      minY: (minY - yMargin),
-      maxY: (maxY + yMargin),
+      minX: 0,
+      maxX: max(1, _viewWindow - 1).toDouble(),
+      minY: minYv - yMargin,
+      maxY: maxYv + yMargin,
       gridData: FlGridData(
         show: true,
         drawVerticalLine: false,
-        horizontalInterval: ((maxY - minY) / 4).abs() > 0 ? ((maxY - minY) / 4) : 1,
+        horizontalInterval: ((maxYv - minYv) / 4).abs() > 0 ? ((maxYv - minYv) / 4) : 1,
         getDrawingHorizontalLine: (value) => FlLine(color: Colors.white24, strokeWidth: 0.5),
       ),
       titlesData: FlTitlesData(
@@ -67,31 +225,31 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 44,
-            interval: ((maxY - minY) / 4).abs() > 0 ? ((maxY - minY) / 4) : 1,
+            interval: ((maxYv - minYv) / 4).abs() > 0 ? ((maxYv - minYv) / 4) : 1,
             getTitlesWidget: (val, meta) {
-              return Text(val.toStringAsFixed(0), style: const TextStyle(color: Colors.white70, fontSize: 12));
+              return Text(val.toStringAsFixed(0),
+                  style: const TextStyle(color: Colors.white70, fontSize: 12));
             },
           ),
         ),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
-            interval: (spots.length / 4).floor().clamp(1, spots.length).toDouble(),
+            // 4~6개 정도만 찍히도록
+            interval: max(1, (_viewWindow / 5).floor()).toDouble(),
             getTitlesWidget: (val, meta) {
-              final idx = val.toInt();
-              // 간단한 라벨 예시 (시간/일 등)
+              final local = val.round();
+              final lbl = _labelForLocalX(local);
               return Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  ' ${idx.toString()}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                child: Text(lbl, style: const TextStyle(color: Colors.white70, fontSize: 10),
                 ),
               );
             },
           ),
         ),
-        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       ),
       borderData: FlBorderData(show: false),
       lineBarsData: [
@@ -99,14 +257,19 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
           spots: spots,
           isCurved: true,
           curveSmoothness: 0.4,
-          color: param == '수온' ? Colors.yellowAccent : (param == '수질' ? Colors.tealAccent : Colors.cyanAccent),
+          color: selectedParameter == '수온'
+              ? Colors.yellowAccent
+              : (selectedParameter == '수질' ? Colors.tealAccent : Colors.cyanAccent),
           barWidth: 3,
           dotData: FlDotData(show: true),
           belowBarData: BarAreaData(
             show: true,
             gradient: LinearGradient(
               colors: [
-                (param == '수온' ? Colors.yellowAccent : (param == '수질' ? Colors.tealAccent : Colors.cyanAccent)).withOpacity(0.35),
+                (selectedParameter == '수온'
+                    ? Colors.yellowAccent
+                    : (selectedParameter == '수질' ? Colors.tealAccent : Colors.cyanAccent))
+                    .withOpacity(0.35),
                 Colors.transparent
               ],
               begin: Alignment.topCenter,
@@ -118,32 +281,41 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
       lineTouchData: LineTouchData(
         handleBuiltInTouches: true,
         touchTooltipData: LineTouchTooltipData(
-          // 각 툴팁 박스의 배경색을 스팟 단위로 반환
-          getTooltipColor: (LineBarSpot touchedSpot) {
-            return Colors.black87;
-          },
-          // 툴팁 내용 생성
+          getTooltipColor: (t) => Colors.black87,
           getTooltipItems: (touched) {
-            return touched.map((t) {
-              return LineTooltipItem(
-                '${t.y}',
-                const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              );
-            }).toList();
+            return touched
+                .map((t) => LineTooltipItem(
+                    '${t.y}',
+                    const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ))
+                .toList();
           },
         ),
       ),
     );
   }
 
+  // 파라미터/범위 변경 시 서버 재요청
+  Future<void> _onChangeParameter(String label) async {
+    if (selectedParameter == label) return;
+    setState(() => selectedParameter = label);
+    await _fetchAndBuild(reset: true);
+  }
+
+  Future<void> _onChangeRange(String code) async {
+    if (selectedRangeCode == code) return;
+    setState(() {
+      selectedRangeCode = code;
+      _syncViewWindowWithRange();
+    });
+    await _fetchAndBuild(reset: true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final sw = MediaQuery.of(context).size.width;
     final sh = MediaQuery.of(context).size.height;
-
-    // 현재 선택된 파라미터/범위에 따른 데이터
-    final spots = _generateSample(selectedParameter, selectedRange);
-    final chartData = _makeLineChartData(spots, selectedParameter);
+    final spots = _viewportSpots();
+    final currentValue = _values.isNotEmpty ? _values.last : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -174,26 +346,16 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
                   padding: const EdgeInsets.all(12),
                   child: Column(
                     children: [
-                      // 상단 small label row (토글처럼 보이게)
+                      // 상단 토글 + 현재값
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildToggleLabel('수온', selectedParameter == '수온', onTap: () {
-                            setState(() {
-                              selectedParameter = '수온';
-                            });
-                          }),
-                          _buildToggleLabel('수질', selectedParameter == '수질', onTap: () {
-                            setState(() {
-                              selectedParameter = '수질';
-                            });
-                          }),
-                          _buildToggleLabel('용존산소', selectedParameter == '용존산소', onTap: () {
-                            setState(() {
-                              selectedParameter = '용존산소';
-                            });
-                          }),
-                          // 오른쪽 간단한 현재값 박스
+                          _buildToggleLabel('수온', selectedParameter == '수온',
+                              onTap: () => _onChangeParameter('수온')),
+                          _buildToggleLabel('수질', selectedParameter == '수질',
+                              onTap: () => _onChangeParameter('수질')),
+                          _buildToggleLabel('용존산소', selectedParameter == '용존산소',
+                              onTap: () => _onChangeParameter('용존산소')),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
@@ -201,21 +363,39 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              '${spots.last.y.toStringAsFixed(1)}',
+                              currentValue != null ? currentValue.toStringAsFixed(1) : '-',
                               style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 12),
+
+                      // 차트 + 드래그 처리
                       Expanded(
-                        child: LineChart(
-                          chartData,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            // 현재 화면 너비에 맞춰 포인트 당 픽셀 계산
+                            _pxPerPoint =
+                                max(8.0, constraints.maxWidth / max(1, _viewWindow).toDouble());
+
+                            return GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onHorizontalDragUpdate: _onHorizontalDragUpdate,
+                              child: LineChart(
+                                _makeLineChartData(spots),
+                                duration: const Duration(milliseconds: 250),
+                                curve: Curves.easeInOut,
+                              ),
+                            );
+                          },
                         ),
                       ),
+                      if (_isLoading)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 8),
+                          child: LinearProgressIndicator(minHeight: 2),
+                        ),
                     ],
                   ),
                 ),
@@ -246,28 +426,25 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
                       leading: const Icon(Icons.timeline),
                       title: const Text('범위 / 단위', style: TextStyle(fontWeight: FontWeight.bold)),
                       children: [
-                        _buildRangeTile('1시간 단위'),
-                        _buildRangeTile('일주일 단위'),
-                        _buildRangeTile('한달 단위'),
+                        for (final o in _rangeOptions)
+                          _buildRangeTile(o.$1, o.$2),
                       ],
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // 여기에 추가 컨트롤이나 통계요약 카드 넣어도 됨
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       ElevatedButton.icon(
                         onPressed: () {
-                          // 예: CSV export or request historical
+                          // TODO: CSV export
                         },
                         icon: const Icon(Icons.download),
                         label: const Text('내보내기'),
                       ),
                       ElevatedButton.icon(
                         onPressed: () {
-                          // 실시간 모드 토글
+                          // TODO: 실시간 모드 토글
                         },
                         icon: const Icon(Icons.play_arrow),
                         label: const Text('실시간 보기'),
@@ -284,6 +461,8 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
     );
   }
 
+  // ─────────────────── UI helpers ───────────────────
+
   Widget _buildToggleLabel(String label, bool active, {required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -293,7 +472,8 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
           color: active ? Colors.white : Colors.white24,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(label, style: TextStyle(color: active ? Colors.black : Colors.white, fontWeight: FontWeight.w600)),
+        child: Text(label,
+            style: TextStyle(color: active ? Colors.black : Colors.white, fontWeight: FontWeight.w600)),
       ),
     );
   }
@@ -303,16 +483,16 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
     return ListTile(
       title: Text(label),
       trailing: selected ? const Icon(Icons.check_circle, color: Colors.blue) : const Icon(Icons.circle_outlined),
-      onTap: () => setState(() => selectedParameter = label),
+      onTap: () => _onChangeParameter(label),
     );
   }
 
-  Widget _buildRangeTile(String label) {
-    final selected = selectedRange == label;
+  Widget _buildRangeTile(String label, String code) {
+    final selected = selectedRangeCode == code;
     return ListTile(
       title: Text(label),
       trailing: selected ? const Icon(Icons.check_circle, color: Colors.blue) : const Icon(Icons.circle_outlined),
-      onTap: () => setState(() => selectedRange = label),
+      onTap: () => _onChangeRange(code),
     );
   }
 }
