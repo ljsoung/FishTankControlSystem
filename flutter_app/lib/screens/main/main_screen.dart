@@ -9,8 +9,6 @@ import '../../widgets/animated_fish.dart';
 import '../../utils/feed_timer_manager.dart';
 import '../fish/decoration_sheet.dart';
 
-
-
 class MainFishTankScreen extends StatefulWidget {
   final String token;
   const MainFishTankScreen({super.key, required this.token});
@@ -25,17 +23,18 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   double? phValue;
   bool isLoading = true;
 
-  Duration? remainingTime; // ⏳ 남은 시간
-  Timer? timer; // ⏱ 카운트다운용 타이머
-  String? feedTimeText; // 선택된 배식 시간 텍스트
+  Duration? remainingTime;
+  Timer? timer;
+  String? feedTimeText;
 
   late FeedTimerManager feedTimer;
 
-  // ✅ 이상 감지 여부 저장용
   bool tempAlert = false;
   bool doAlert = false;
   bool phAlert = false;
 
+  // ✅ 꾸미기 선택 상태 추가
+  String? selectedDecoration;
 
   @override
   void initState() {
@@ -58,7 +57,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   }
 
   Future<void> fetchSensorData() async {
-
     try {
       final response = await http.get(
         Uri.parse("http://192.168.34.17:8080/api/sensor/main"),
@@ -71,9 +69,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final status = data["status"];
-        final sensor = data["data"]; // ✅ 공통으로 센서 데이터 참조
+        final sensor = data["data"];
 
-        // ✅ 센서값 기본 세팅 (어종 없어도 표시)
         if (sensor != null) {
           setState(() {
             temperature = (sensor["temperature"]["value"] ?? 0).toDouble();
@@ -83,28 +80,15 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
         }
 
         if (status == "OK" || status == "WARNING") {
-          final sensor = data["data"];
           final abnormalItems = List<String>.from(data["abnormalItems"] ?? []);
-
           setState(() {
-            temperature = sensor["temperature"]["value"]?.toDouble();
-            doValue = sensor["dissolvedOxygen"]["value"]?.toDouble();
-            phValue = sensor["tds"]["value"]?.toDouble();
-
-            // 이상 감지 여부 저장
             tempAlert = abnormalItems.contains("temperature");
             doAlert = abnormalItems.contains("dissolvedOxygen");
             phAlert = abnormalItems.contains("tds");
-
             isLoading = false;
           });
-
-          print("✅ 센서 데이터 로드 완료 (상태: $status)");
-        }
-        else if (status == "NO_FISH_TYPE") {
+        } else if (status == "NO_FISH_TYPE") {
           final msg = data["message"] ?? "어종 정보가 없습니다. 먼저 어종을 등록해주세요.";
-          print("🐠 어종 정보 없음: $msg");
-
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(msg),
@@ -113,14 +97,9 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
               duration: const Duration(seconds: 3),
             ),
           );
-
-          // ✅ 어종이 없어도 센서 데이터는 표시
           setState(() => isLoading = false);
-        }
-        else if (status == "NO_SENSOR_DATA") {
+        } else if (status == "NO_SENSOR_DATA") {
           final msg = data["message"] ?? "센서 데이터가 존재하지 않습니다.";
-          print("⚠️ 센서 데이터 없음: $msg");
-
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(msg),
@@ -130,7 +109,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
             ),
           );
 
-          // 디바이스 자동 등록 로직
           final deviceResponse = await http.post(
             Uri.parse("http://192.168.34.17:8080/api/device/register"),
             headers: {
@@ -140,11 +118,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
           );
 
           if (deviceResponse.statusCode == 200) {
-            final deviceData = jsonDecode(deviceResponse.body);
-            final sensorToken = deviceData["sensorToken"];
-
-            print("센서 디바이스 등록 완료: $sensorToken");
-
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text("✅ 센서 디바이스 자동 등록 완료"),
@@ -153,14 +126,11 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                 duration: Duration(seconds: 3),
               ),
             );
-
             setState(() => isLoading = true);
             await Future.delayed(const Duration(seconds: 2));
             await fetchSensorData();
           }
-        }
-        else {
-          print("⚠️ 알 수 없는 상태 코드: $status");
+        } else {
           setState(() => isLoading = false);
         }
       } else {
@@ -173,17 +143,41 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     }
   }
 
+  // 🎯 꾸미기 아이템별 좌표(비율 기반)
+  Offset getDecorationPosition(String imagePath, double sw, double sh) {
+    if (imagePath.contains("은색왕관") || imagePath.contains("금색왕관")) {
+      return Offset(sw * 0.29, sh * 0.265); // 머리 위
+    } else if (imagePath.contains("천사링")) {
+      return Offset(sw * 0.40, sh * 0.20);
+    } else if (imagePath.contains("악마뿔")) {
+      return Offset(sw * 0.33, sh * 0.25);
+    } else if (imagePath.contains("경고표시줄")) {
+      return Offset(sw * 0.20, sh * 0.28); // 어항 하단
+    } else {
+      return Offset(sw * 0.40, sh * 0.40); // 기본값
+    }
+  }
+
+// 🎯 꾸미기 아이템별 크기(비율 기반)
+  Size getDecorationSize(String imagePath, double sw) {
+    if (imagePath.contains("은색왕관") || imagePath.contains("금색왕관")) {
+      return Size(sw * 0.18, sw * 0.18);
+    } else if (imagePath.contains("천사링")) {
+      return Size(sw * 0.22, sw * 0.24);
+    } else if (imagePath.contains("악마뿔")) {
+      return Size(sw * 0.20, sw * 0.18);
+    } else if (imagePath.contains("경고표시줄")) {
+      return Size(sw * 0.60, sw * 0.50);
+    } else {
+      return Size(sw * 0.20, sw * 0.20);
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
-    final sw = MediaQuery
-        .of(context)
-        .size
-        .width;
-    final sh = MediaQuery
-        .of(context)
-        .size
-        .height;
+    final sw = MediaQuery.of(context).size.width;
+    final sh = MediaQuery.of(context).size.height;
     final base = sw < sh ? sw : sh;
     final fishWidth = (base * 0.80).clamp(120.0, 280.0);
     final fishHeight = fishWidth * 0.75;
@@ -217,7 +211,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                 ),
                 child: Column(
                   children: [
-                    // 🔹 기존 수질 데이터 Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -252,8 +245,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                         ),
                       ],
                     ),
-
-                    // 🔹 수질 데이터 아래에 "사료 배식 시간" 표시
                     if (feedTimeText != null) ...[
                       const SizedBox(height: 8),
                       Text(
@@ -269,7 +260,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                 ),
               ),
 
-              // 중앙 물고기 영역
+              // 🐠 중앙 물고기 영역
               Expanded(
                 child: SizedBox.expand(
                   child: Stack(
@@ -281,28 +272,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                           height: fishHeight,
                           child: Image.asset(
                             'assets/pin_fish.gif',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                      Align(
-                        alignment: const Alignment(-0.17, -1.36),
-                        child: SizedBox(
-                          width: 70,
-                          height: 40,
-                          child: Image.asset(
-                            'assets/doolifish.gif',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                      Align(
-                        alignment: const Alignment(-0.1, -1.36),
-                        child: SizedBox(
-                          width: 70,
-                          height: 40,
-                          child: Image.asset(
-                            'assets/hyung.gif',
                             fit: BoxFit.contain,
                           ),
                         ),
@@ -341,6 +310,26 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                         duration: const Duration(seconds: 5),
                         flipHorizontally: true,
                       ),
+
+                      // 기존 Align 삭제하고 아래 코드로 교체
+                      if (selectedDecoration != null)
+                        Builder(
+                          builder: (context) {
+                            final pos = getDecorationPosition(selectedDecoration!, sw, sh);
+                            final size = getDecorationSize(selectedDecoration!, sw);
+                            return Positioned(
+                              left: pos.dx,
+                              top: pos.dy,
+                              child: Image.asset(
+                                selectedDecoration!,
+                                width: size.width,
+                                height: size.height,
+                                fit: BoxFit.contain,
+                              ),
+                            );
+                          },
+                        ),
+
                     ],
                   ),
                 ),
@@ -375,13 +364,14 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     );
   }
 
-  // 🔹 데이터 박스 (이상일 경우 배경색 변경)
+  // 🔹 데이터 박스
   Widget _buildDataBox(String label, {bool isAlert = false}) {
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isAlert ? Colors.redAccent.withOpacity(0.85) : Colors.white
-            .withOpacity(0.9),
+        color: isAlert
+            ? Colors.redAccent.withOpacity(0.85)
+            : Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isAlert ? Colors.red : Colors.black38,
@@ -413,20 +403,24 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     );
   }
 
-
   // 🔹 하단 버튼
   Widget _buildMenuButton(String label, IconData icon) {
     return ElevatedButton.icon(
-      // ✅ onPressed 콜백을 async로 선언
       onPressed: () async {
         if (label == "꾸미기") {
           showModalBottomSheet(
             context: context,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
-            builder: (context) => DecorationSheet(), // const 제거!
+            builder: (context) => DecorationSheet(
+              currentDecoration: selectedDecoration,
+              onDecorationSelected: (String? selected) {
+                setState(() {
+                  selectedDecoration = selected;
+                });
+              },
+            ),
           );
-
         } else if (label == "어종 선택") {
           showFishSelectionSheet(context, widget.token);
         } else if (label == "센서 데이터") {
@@ -439,8 +433,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
         } else if (label == "사료 배식 시간") {
           final selected = await showFeedTimePicker(context);
           if (selected != null) {
-            // ✅ feed_time_picker.dart에서 “X시간 X분 후” 문자열을 받아서 Duration으로 변환
-            final match = RegExp(r'(\d+)시간 (\d+)분').firstMatch(selected);
+            final match =
+            RegExp(r'(\d+)시간 (\d+)분').firstMatch(selected);
             if (match != null) {
               final hours = int.parse(match.group(1)!);
               final minutes = int.parse(match.group(2)!);
@@ -450,14 +444,17 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
           }
         }
       },
-
       icon: Icon(icon, size: 20),
-      label: Text(label,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+      label: Text(
+        label,
+        style:
+        const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        padding:
+        const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: const BorderSide(color: Colors.black26),
@@ -466,5 +463,3 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     );
   }
 }
-
-
