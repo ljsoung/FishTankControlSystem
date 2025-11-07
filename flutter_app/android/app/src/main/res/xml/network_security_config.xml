@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- HTTPS를 사용하는 jwejweiya.shop을 허용 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">jwejweiya.shop</domain>
+    </domain-config>
+
+</network-security-config>
