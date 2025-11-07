@@ -59,7 +59,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   Future<void> fetchSensorData() async {
     try {
       final response = await http.get(
-        Uri.parse("http://192.168.34.17:8080/api/sensor/main"),
+        Uri.parse("https://jwejweiya/api/sensor/main"),
         headers: {
           "Authorization": "Bearer ${widget.token}",
           "Content-Type": "application/json",
@@ -110,7 +110,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
           );
 
           final deviceResponse = await http.post(
-            Uri.parse("http://192.168.34.17:8080/api/device/register"),
+            Uri.parse("https://jwejweiya.shop/api/device/register"),
             headers: {
               "Authorization": "Bearer ${widget.token}",
               "Content-Type": "application/json",

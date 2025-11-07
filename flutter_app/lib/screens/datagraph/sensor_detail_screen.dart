@@ -31,7 +31,7 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
   String selectedRangeCode = '1h'; // '1시간 단위: 1h'/'하루 단위: 1d'/'일주일 단위: 1w'
 
   // === 서버 설정 ===
-  final String _base = 'http://192.168.34.17:8080';
+  final String _base = 'https://jwejweiya.shop:8080';
   int count = 10; // 서버에서 가져온 포인트 수(최초 10)
   bool _isLoading = false;
 
