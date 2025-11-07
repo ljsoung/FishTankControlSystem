@@ -176,7 +176,6 @@ Widget _buildFishChoiceButton(
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           final msg = data["message"] ?? "$name 어종 등록 완료 🎉";
-
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(msg),
