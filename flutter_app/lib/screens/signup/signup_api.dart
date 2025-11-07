@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 class SignupApi {
   static Future<http.Response> registerUser(String id, String password, String confirmPassword, String name) {
-    final url = Uri.parse("https://54.116.12.17:8080/api/user/register");
+    final url = Uri.parse("https://jwejweiya.shop/api/user/register");
     return http.post(
       url,
       headers: {"Content-Type": "application/json"},
