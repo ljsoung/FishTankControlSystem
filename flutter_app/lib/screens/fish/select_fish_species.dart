@@ -162,7 +162,7 @@ Widget _buildFishChoiceButton(
       Navigator.pop(context);
 
       final url =
-          "http://192.168.34.17:8080/api/fish/select?fishType=$name"; // ✅ @RequestParam
+          "https://54.116.12.17:8080/api/fish/select?fishType=$name"; // ✅ @RequestParam
 
       try {
         final response = await http.post(
