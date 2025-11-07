@@ -59,7 +59,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   Future<void> fetchSensorData() async {
     try {
       final response = await http.get(
-        Uri.parse("https://jwejweiya/api/sensor/main"),
+        Uri.parse("https://jwejweiya.shop/api/sensor/main"),
         headers: {
           "Authorization": "Bearer ${widget.token}",
           "Content-Type": "application/json",
