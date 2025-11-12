@@ -31,7 +31,7 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
   String selectedRangeCode = '1h'; // '1시간 단위: 1h'/'하루 단위: 1d'/'일주일 단위: 1w'
 
   // === 서버 설정 ===
-  final String _base = 'http://192.168.34.17:8080';
+  final String _base = 'https://jwejweiya.shop';
   int count = 10; // 서버에서 가져온 포인트 수(최초 10)
   bool _isLoading = false;
 
@@ -41,7 +41,7 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
 
   // === 뷰포트(창) 설정 ===
   // 화면에 보이는 구간 길이(포인트 단위). 범위에 따라 기본값 다르게.
-  int _viewWindow = 10;
+  int _viewWindow = 5;
   // 현재 창의 시작 인덱스(0.._values.length - _viewWindow)
   int _viewStart = 0;
 
@@ -441,13 +441,6 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
                         },
                         icon: const Icon(Icons.download),
                         label: const Text('내보내기'),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          // TODO: 실시간 모드 토글
-                        },
-                        icon: const Icon(Icons.play_arrow),
-                        label: const Text('실시간 보기'),
                       ),
                     ],
                   ),
