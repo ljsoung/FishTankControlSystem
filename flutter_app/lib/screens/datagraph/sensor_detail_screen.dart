@@ -434,15 +434,6 @@ class _SensorDetailScreenState extends State<SensorDetailScreen> {
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          // TODO: CSV export
-                        },
-                        icon: const Icon(Icons.download),
-                        label: const Text('내보내기'),
-                      ),
-                    ],
                   ),
                 ],
               ),
