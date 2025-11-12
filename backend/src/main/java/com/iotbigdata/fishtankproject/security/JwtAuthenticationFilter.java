@@ -30,6 +30,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getServletPath();
+
+        // ✅ 로그인, 회원가입 등은 JWT 검사에서 제외
+        if (path.startsWith("/api/user/login") ||
+                path.startsWith("/api/user/register") ||
+                path.startsWith("/api/user/reset") ||
+                path.startsWith("/api/user/verify") ||
+                path.startsWith("/api/sensor/input")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
@@ -43,12 +55,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 userDetails, null, userDetails.getAuthorities());
 
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                // SecurityContext에 인증 정보 저장
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }
 
         filterChain.doFilter(request, response);
     }
+
 }

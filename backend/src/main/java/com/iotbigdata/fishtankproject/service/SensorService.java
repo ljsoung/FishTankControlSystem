@@ -199,7 +199,7 @@ public class SensorService {
                                 .orElse(0.0);
                         Map<String, Object> map = new HashMap<>();
                         map.put("time", e.getKey().toString());
-                        map.put("value", String.format("%.1f", avg));
+                        map.put("value", String.format("%.2f", avg));
                         return map;
                     })
                     .toList();
@@ -221,7 +221,7 @@ public class SensorService {
                                 .orElse(0.0);
                         Map<String, Object> map = new HashMap<>();
                         map.put("time", e.getKey());
-                        map.put("value", String.format("%.1f", avg));
+                        map.put("value", String.format("%.2f", avg));
                         return map;
                     })
                     .toList();
