@@ -40,22 +40,22 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   // ✅ 꾸미기 선택 상태 추가
   String? selectedDecoration;
 
+  Timer? refreshTimer;
+
   @override
   void initState() {
     super.initState();
     fetchSensorData();
-    feedTimer = FeedTimerManager(
-      context: context,
-      onTimeUpdate: () {
-        setState(() {
-          feedTimeText = feedTimer.formatDuration(feedTimer.remainingTime!);
-        });
-      },
-    );
+
+    // 5초마다 센서 데이터 최신화
+    refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) fetchSensorData();
+    });
   }
 
   @override
   void dispose() {
+    refreshTimer?.cancel();
     feedTimer.dispose();
     super.dispose();
   }
