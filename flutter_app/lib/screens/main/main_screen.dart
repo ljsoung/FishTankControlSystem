@@ -33,6 +33,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   bool doAlert = false;
   bool phAlert = false;
 
+  int? likability;
+
   // ✅ 꾸미기 선택 상태 추가
   String? selectedDecoration;
 
@@ -59,7 +61,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   Future<void> fetchSensorData() async {
     try {
       final response = await http.get(
-        Uri.parse("https://jwejweiya.shop/api/sensor/main"),
+        // Uri.parse("https://jwejweiya.shop/api/sensor/main"),
+        Uri.parse("http://192.168.34.17:8080/api/sensor/main"),
         headers: {
           "Authorization": "Bearer ${widget.token}",
           "Content-Type": "application/json",
@@ -70,6 +73,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
         final data = jsonDecode(response.body);
         final status = data["status"];
         final sensor = data["data"];
+        likability = data["likability"];
 
         if (sensor != null) {
           setState(() {
@@ -110,7 +114,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
           );
 
           final deviceResponse = await http.post(
-            Uri.parse("https://jwejweiya.shop/api/device/register"),
+            // Uri.parse("https://jwejweiya.shop/api/device/register"),
+            Uri.parse("http://192.168.34.17:8080/api/device/register"),
             headers: {
               "Authorization": "Bearer ${widget.token}",
               "Content-Type": "application/json",
@@ -245,6 +250,27 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                         ),
                       ],
                     ),
+                    SizedBox(height: 10),
+
+                    // ❤️ 호감도 바
+                    if (likability != null)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: _buildLikabilityBar(likability!),
+                      ),
+
+                    if (feedTimeText != null) ...[
+                      SizedBox(height: 8),
+                      Text(
+                        '사료 배식 시간: $feedTimeText',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+
                     if (feedTimeText != null) ...[
                       const SizedBox(height: 8),
                       Text(
@@ -414,6 +440,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
             backgroundColor: Colors.transparent,
             builder: (context) => DecorationSheet(
               currentDecoration: selectedDecoration,
+              userLikability: likability ?? 0,
               onDecorationSelected: (String? selected) {
                 setState(() {
                   selectedDecoration = selected;
@@ -462,4 +489,29 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       ),
     );
   }
+
+  // 호감도 박스
+  Widget _buildLikabilityBar(int value) {
+    return Stack(
+      alignment: Alignment.centerLeft,
+      children: [
+        Image.asset(
+          "assets/likability_bar.png",
+          width: 160, // 필요하면 조절
+        ),
+        Positioned(
+          left: 70, // 텍스트가 흰색 영역 안에 딱 들어가도록 조절
+          child: Text(
+            "$value",
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
 }

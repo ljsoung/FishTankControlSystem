@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 class DecorationSheet extends StatefulWidget {
   final Function(String?) onDecorationSelected;
   final String? currentDecoration; // ✅ 현재 선택된 꾸미기 경로를 전달받음
+  final int userLikability;
 
   const DecorationSheet({
     super.key,
     required this.onDecorationSelected,
+    required this.userLikability,
     this.currentDecoration,
   });
 
@@ -45,11 +47,11 @@ class _DecorationSheetState extends State<DecorationSheet> {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              _buildDecorationOption("assets/decoration_image/은색왕관.png", "은색 왕관 (호감도 100)"),
-              _buildDecorationOption("assets/decoration_image/금색왕관.png", "금색 왕관 (호감도 200)"),
-              _buildDecorationOption("assets/decoration_image/경고표시줄.png", "경고표시줄 (호감도 300)"),
-              _buildDecorationOption("assets/decoration_image/악마뿔2.png", "악마뿔 (호감도 400)"),
-              _buildDecorationOption("assets/decoration_image/천사링.png", "천사링 (호감도 500)"),
+              _buildDecorationOption("assets/decoration_image/은색왕관.png", "은색 왕관", 100),
+              _buildDecorationOption("assets/decoration_image/금색왕관.png", "금색 왕관", 200),
+              _buildDecorationOption("assets/decoration_image/경고표시줄.png", "경고 표시줄", 300),
+              _buildDecorationOption("assets/decoration_image/악마뿔2.png", "악마뿔", 400),
+              _buildDecorationOption("assets/decoration_image/천사링.png", "천사링", 500),
             ],
           ),
         );
@@ -57,14 +59,19 @@ class _DecorationSheetState extends State<DecorationSheet> {
     );
   }
 
-  Widget _buildDecorationOption(String imagePath, String label) {
+  Widget _buildDecorationOption(String imagePath, String label, int minLikability) {
     final isSelected = selectedItem == imagePath;
+
+    // ✔ 잠금 여부 판단
+    final bool isLocked = widget.userLikability < minLikability;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: ElevatedButton(
-        onPressed: () {
+        onPressed: isLocked
+            ? null // ✔ 잠겨 있으면 선택 불가
+            : () {
           setState(() {
-            // ✅ 선택된 이미지가 다시 클릭되면 해제
             if (selectedItem == imagePath) {
               selectedItem = null;
             } else {
@@ -74,7 +81,9 @@ class _DecorationSheetState extends State<DecorationSheet> {
           widget.onDecorationSelected(selectedItem);
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? Colors.amber[700] : const Color(0xFF2196F3),
+          backgroundColor: isLocked
+              ? Colors.grey[500] // ✔ 잠김 버튼 색
+              : (isSelected ? Colors.amber[700] : const Color(0xFF2196F3)),
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 55),
           shape: RoundedRectangleBorder(
@@ -96,10 +105,19 @@ class _DecorationSheetState extends State<DecorationSheet> {
                 child: Image.asset(imagePath, fit: BoxFit.contain),
               ),
             ),
-            Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+
+            // ✔ 라벨 + 잠금 표시
+            Text(
+              isLocked ? "$label 🔒 (호감도 $minLikability 필요)" : "$label",
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
 }
