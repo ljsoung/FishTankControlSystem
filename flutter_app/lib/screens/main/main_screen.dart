@@ -29,6 +29,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
 
   late FeedTimerManager feedTimer;
 
+  String? sensorToken;
+
   bool tempAlert = false;
   bool doAlert = false;
   bool phAlert = false;
@@ -121,8 +123,24 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
               "Content-Type": "application/json",
             },
           );
+          
+          print("register 요청함");
 
           if (deviceResponse.statusCode == 200) {
+            final deviceData = jsonDecode(deviceResponse.body);
+
+            setState(() {
+              sensorToken = deviceData["sensorToken"] ?? deviceData["token"];
+            });
+
+            print("토큰 받았어");
+
+            if (sensorToken != null) {
+              print("여기까지 오긴 했어");
+              await sendTokenToSensor(sensorToken!);
+              print("토큰 보냇어");
+            }
+
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text("✅ 센서 디바이스 자동 등록 완료"),
@@ -147,6 +165,24 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       setState(() => isLoading = false);
     }
   }
+
+  Future<void> sendTokenToSensor(String token) async {
+    try {
+      // 라즈베리파이의 IP 주소
+      final sensorUrl = Uri.parse("http://192.168.0.120/setToken");
+
+      final response = await http.post(
+        sensorUrl,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"sensorToken": token}),
+      );
+
+      print("📡 센서로 token 전송 완료: ${response.statusCode} / ${response.body}");
+    } catch (e) {
+      print("❌ 센서로 token 전송 실패: $e");
+    }
+  }
+
 
   // 🎯 꾸미기 아이템별 좌표(비율 기반)
   Offset getDecorationPosition(String imagePath, double sw, double sh) {
