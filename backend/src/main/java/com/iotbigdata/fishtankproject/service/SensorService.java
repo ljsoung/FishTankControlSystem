@@ -2,10 +2,7 @@ package com.iotbigdata.fishtankproject.service;
 
 import com.iotbigdata.fishtankproject.domain.*;
 import com.iotbigdata.fishtankproject.dto.SensorInputDto;
-import com.iotbigdata.fishtankproject.repository.DissolvedOxygenRepository;
-import com.iotbigdata.fishtankproject.repository.UserRepository;
-import com.iotbigdata.fishtankproject.repository.WaterQualityRepository;
-import com.iotbigdata.fishtankproject.repository.WaterTemperatureRepository;
+import com.iotbigdata.fishtankproject.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -26,38 +23,52 @@ public class SensorService {
     private final WaterQualityRepository phRepo;
     private final UserRepository userRepository;
     private final SensorTokenService sensorTokenService;
+    private final LikabilityService likabilityService;
+    private final LikabilityRepository likabilityRepository;
 
     public ResponseEntity<?> saveSensorData(SensorInputDto dto, String authHeader) {
+
         if (authHeader == null || !authHeader.startsWith("Sensor ")) {
             return ResponseEntity.status(401).body(Map.of("error", "Device token missing"));
         }
 
         String token = authHeader.substring(7);
         AppUser user = sensorTokenService.getUserBySensorToken(token);
-        // 각각의 센서 테이블에 저장
-        // 수온
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 수온 저장
         WaterTemperature temp = new WaterTemperature();
         temp.setUser(user);
         temp.setSensor_value(dto.getTemperature());
-        temp.setMeasureAt(LocalDateTime.now());
+        temp.setMeasureAt(now);
         tempRepo.save(temp);
 
-        // 용존 산소
+        // 용존 산소 저장
         DissolvedOxygen oxygen = new DissolvedOxygen();
         oxygen.setUser(user);
         oxygen.setSensor_value(dto.getDoValue());
-        oxygen.setMeasureAt(LocalDateTime.now());
+        oxygen.setMeasureAt(now);
         doRepo.save(oxygen);
 
-        // 수질
+        // 수질(TDS) 저장
         WaterQuality ph = new WaterQuality();
         ph.setUser(user);
         ph.setSensor_value(dto.getPh());
-        ph.setMeasureAt(LocalDateTime.now());
+        ph.setMeasureAt(now);
         phRepo.save(ph);
 
-        return ResponseEntity.ok(Map.of("message", "센서 데이터 저장 완료"));
+        // Likability 업데이트 호출
+        likabilityService.updateLikability(
+                user,
+                dto.getTemperature(), // temp
+                dto.getPh(),          // tds
+                dto.getDoValue()      // dissolved oxygen
+        );
+
+        return ResponseEntity.ok(Map.of("message", "센서 데이터 저장 + 호감도 갱신 완료"));
     }
+
 
     // 메인화면 데이터 출력
     public ResponseEntity<?> getMainPageSensorData(UserDetails userDetails) {
@@ -94,11 +105,26 @@ public class SensorService {
 
         // ✅ 어종이 없는 경우에도 센서값을 포함해서 응답
         Fish fish = user.getFishType();
+
+        // 호감도
+        int likedValue = 0;
+
+        if (fish != null) {
+            // 🌟 유저 + 어류 조합으로 likability 조회
+            Optional<Likability> likeOpt =
+                    likabilityRepository.findByUserAndFish(user, fish);
+
+            if (likeOpt.isPresent()) {
+                likedValue = likeOpt.get().getLikability();
+            }
+        }
+
         if (fish == null) {
             return ResponseEntity.ok(Map.of(
                     "status", "NO_FISH_TYPE",
                     "message", "사용자에게 등록된 어종 정보가 없습니다. 어종을 먼저 등록해주세요.",
-                    "data", data // 🔹 센서값도 포함!
+                    "likability", likedValue,    // 🔹 추가됨
+                    "data", data
             ));
         }
 
@@ -118,6 +144,7 @@ public class SensorService {
                 "status", status,
                 "fishType", fish.getFishType(),
                 "abnormalItems", abnormalItems,
+                "likability", likedValue,
                 "data", data
         ));
     }

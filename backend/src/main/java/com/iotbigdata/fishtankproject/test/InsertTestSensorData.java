@@ -15,11 +15,21 @@ public class InsertTestSensorData {
 
      */
     // 서비스용
+    /*
     private static final String DB_URL = "jdbc:mysql://ls-d23d72f867f318ba3f2becb60d89881b9618f83e.chue6wqaif36.ap-northeast-2.rds.amazonaws.com:3306/sensor?serverTimezone=Asia/Seoul";
     private static final String DB_USER = "dbmasteruser";
     private static final String DB_PASSWORD = "&D+E!IrF!l18?Ci*oKO92{eV~V9d1Q[0"; // ← 본인 MySQL 비밀번호로 변경
 
-    private static final String USER_ID = "prod02"; // 실제 user 테이블에 존재하는 ID로 변경
+
+     */
+
+    // 테스트용
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/sensor?serverTimezone=Asia/Seoul";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "jwejweiya"; // ← 본인 MySQL 비밀번호로 변경
+
+
+    private static final String USER_ID = "jiseong"; // 실제 user 테이블에 존재하는 ID로 변경
     private static final Random random = new Random();
 
     public static void main(String[] args) {
