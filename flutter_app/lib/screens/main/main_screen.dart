@@ -47,9 +47,26 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
     super.initState();
     fetchSensorData();
 
-    // 5초마다 센서 데이터 최신화
-    refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (mounted) fetchSensorData();
+    // 🟢 FeedTimer 초기화 추가 (필수!)
+    feedTimer = FeedTimerManager(
+      context: context,
+      onTimeUpdate: () {
+        setState(() {
+          if (feedTimer.remainingTime != null)
+            feedTimeText = feedTimer.formatDuration(feedTimer.remainingTime!);
+        });
+      },
+    );
+
+    bool isFetching = false;
+
+    refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) async {
+      if (isFetching) return;
+      isFetching = true;
+
+      await fetchSensorData();
+
+      isFetching = false;
     });
   }
 
@@ -150,8 +167,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
               ),
             );
             setState(() => isLoading = true);
-            await Future.delayed(const Duration(seconds: 2));
-            await fetchSensorData();
           }
         } else {
           setState(() => isLoading = false);
@@ -294,19 +309,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
                         alignment: Alignment.centerLeft,
                         child: _buildLikabilityBar(likability!),
                       ),
-
-                    if (feedTimeText != null) ...[
-                      SizedBox(height: 8),
-                      Text(
-                        '사료 배식 시간: $feedTimeText',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-
                     if (feedTimeText != null) ...[
                       const SizedBox(height: 8),
                       Text(
@@ -496,13 +498,16 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
         } else if (label == "사료 배식 시간") {
           final selected = await showFeedTimePicker(context);
           if (selected != null) {
-            final match =
-            RegExp(r'(\d+)시간 (\d+)분').firstMatch(selected);
+            final match = RegExp(r'(\d+)시간 (\d+)분').firstMatch(selected);
             if (match != null) {
               final hours = int.parse(match.group(1)!);
               final minutes = int.parse(match.group(2)!);
-              feedTimer.startCountdown(
-                  Duration(hours: hours, minutes: minutes));
+
+              setState(() {
+                feedTimeText = "$hours시간 $minutes분"; // 화면 즉시 갱신
+              });
+
+              feedTimer.startCountdown(Duration(hours: hours, minutes: minutes));
             }
           }
         }
