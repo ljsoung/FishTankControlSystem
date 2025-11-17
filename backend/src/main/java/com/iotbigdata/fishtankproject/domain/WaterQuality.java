@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @Table(name = "water_quality")
 public class WaterQuality implements SensorEntity {
 
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int number;
