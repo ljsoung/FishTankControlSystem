@@ -2,7 +2,7 @@ FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
-COPY build/libs/*.jar app.jar
+COPY build/libs/FishTankProject-1.0.0.jar app.jar
 
 EXPOSE 8080
 
