@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 Future<String?> showFeedTimePicker(BuildContext context) async {
   Duration selectedDuration = const Duration(hours: 0, minutes: 0);
@@ -26,24 +28,40 @@ Future<String?> showFeedTimePicker(BuildContext context) async {
                 mode: CupertinoTimerPickerMode.hm,
                 initialTimerDuration: const Duration(hours: 0, minutes: 0),
                 onTimerDurationChanged: (Duration newDuration) {
-                  selectedDuration = newDuration; // ✅ 전체 Duration 저장
+                  selectedDuration = newDuration;
                 },
               ),
             ),
             Padding(
               padding: const EdgeInsets.all(10.0),
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   final hours = selectedDuration.inHours;
                   final minutes = selectedDuration.inMinutes % 60;
+
                   final formatted =
-                      '${hours.toString().padLeft(2, '0')}시간 ${minutes.toString().padLeft(2, '0')}분 후';
+                      '${hours.toString().padLeft(2, '0')}시간 '
+                      '${minutes.toString().padLeft(2, '0')}분 후';
+
+                  // ES2 IP 주소
+                  const espIp = "http://192.168.0.42/feedTime";
+
+                  // ESP로 POST 전송
+                  await http.post(
+                    Uri.parse(espIp),
+                    headers: {"Content-Type": "application/json"},
+                    body: jsonEncode({
+                      "hours": hours,
+                      "minutes": minutes,
+                      "totalSeconds": selectedDuration.inSeconds,
+                    }),
+                  );
 
                   Navigator.pop(context, formatted);
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('배식 시간이 $formatted 로 설정되었습니다.'),
+                      content: Text('배식 시간이 설정되었습니다. ($formatted)'),
                       duration: const Duration(seconds: 2),
                     ),
                   );
@@ -62,4 +80,3 @@ Future<String?> showFeedTimePicker(BuildContext context) async {
     },
   );
 }
-

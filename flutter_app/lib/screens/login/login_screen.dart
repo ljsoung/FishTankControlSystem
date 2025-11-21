@@ -32,18 +32,23 @@ class _FishTankLoginState extends State<FishTankLogin> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final token = data["token"];
+        final sensorToken = data["sensorToken"];  // 🔥 추가
 
         print("JWT TOKEN: $token");
+        print("SENSOR TOKEN: $sensorToken");
 
-        if (!mounted) return;   // 비동기 확인
-        // 메인 화면으로 이동
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => MainFishTankScreen(token: token),
+            builder: (_) => MainFishTankScreen(
+              token: token,
+              sensorToken: sensorToken,   // 🔥 넘겨주기
+            ),
           ),
         );
       }
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("서버 연결 실패: $e")),

@@ -11,11 +11,18 @@ import '../fish/decoration_sheet.dart';
 
 class MainFishTankScreen extends StatefulWidget {
   final String token;
-  const MainFishTankScreen({super.key, required this.token});
+  final String? sensorToken;   // 🔥 추가
+
+  const MainFishTankScreen({
+    super.key,
+    required this.token,
+    this.sensorToken,
+  });
 
   @override
   State<MainFishTankScreen> createState() => _MainFishTankScreenState();
 }
+
 
 class _MainFishTankScreenState extends State<MainFishTankScreen> {
   double? temperature;
@@ -45,9 +52,17 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   @override
   void initState() {
     super.initState();
+
+    if (widget.sensorToken != null) {
+      print("📡 로그인 후 센서 토큰 자동 전송: ${widget.sensorToken}");
+      sendTokenToSensor(widget.sensorToken!);
+    } else {
+      print("⚠ 로그인 응답에 센서 토큰 없음");
+    }
+
     fetchSensorData();
 
-    // 🟢 FeedTimer 초기화 추가 (필수!)
+    // FeedTimer 초기화
     feedTimer = FeedTimerManager(
       context: context,
       onTimeUpdate: () {
@@ -140,8 +155,6 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
               "Content-Type": "application/json",
             },
           );
-          
-          print("register 요청함");
 
           if (deviceResponse.statusCode == 200) {
             final deviceData = jsonDecode(deviceResponse.body);
@@ -150,12 +163,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
               sensorToken = deviceData["sensorToken"] ?? deviceData["token"];
             });
 
-            print("토큰 받았어");
-
             if (sensorToken != null) {
-              print("여기까지 오긴 했어");
               await sendTokenToSensor(sensorToken!);
-              print("토큰 보냇어");
             }
 
             ScaffoldMessenger.of(context).showSnackBar(
