@@ -42,6 +42,9 @@
 | **보안** | JWT 토큰 인증, BCryptPasswordEncoder, Spring Security 필터 체인 |
 | **IDE / Tool** | IntelliJ IDEA, Android Studio, GitHub, Postman |
 
+## 시스템 아키텍쳐
+<img src="./SystemArchitecture.png" width="100%" />
+
 ## 프로젝트 구조
 ### 1. Backend
 ```
@@ -195,4 +198,5 @@ flutter_app/
 TODO
 ## 앱 기능
 TODO
+
 
