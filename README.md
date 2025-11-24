@@ -36,7 +36,7 @@
 | **백엔드** | Spring Boot 3.5.7, JPA, Spring Security(JWT), Lombok, Gradle |
 | **API 연동** | REST API(JSON), Postman 테스트 |
 | **DB** | MySQL, JPA |
-| **하드웨어(IoT)** | SEN0244(TDS), DS18B20(Temperature), SEN0237(DO) DS3231(Real Time), Arduino UNO Board, SG-90, HC-SR04, ESP8266 NodeMCU V3(WIFI Module) |
+| **하드웨어(IoT)** | SEN0244(TDS), DS18B20(Temperature), SEN0237(DO), Arduino UNO Board, SG-90, HC-SR04, ESP8266 NodeMCU V3(WIFI Module) |
 | **네트워크** | REST API, WIFI, HTTP JSON 데이터 송수신 |
 | **시각화** | Flutter Charts |
 | **보안** | JWT 토큰 인증, BCryptPasswordEncoder, Spring Security 필터 체인 |
@@ -175,12 +175,14 @@ flutter_app/
    - 호감도 구현
    - Postman을 통한 테스트
    - 각종 예외들에 대한 예외 처리
+   - Firebase Cloud Messaging을 활용하여 사료 부족 시 앱에 알림 전송 구현
   
  - **App**
    - 각 기능에 Spring Boot와 JSON을 통한 요청 및 응답 구현
    - 사료 배식 시간 설정 기능 추가
    - 사용자가 선택한 어류를 안전하게 전달
    - 호감도 표시 UI 및 호감도에 따른 물고기 꾸미기 기능 구현
+   - 앱 알림 기능 구현
    - APK 추출
   
 ### 🐟 이승준
