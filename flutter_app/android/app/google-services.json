@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "838048382384",
+    "project_id": "fishtankproject-f0a11",
+    "storage_bucket": "fishtankproject-f0a11.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:838048382384:android:2cf40cc4e7ab8533ef6a75",
+        "android_client_info": {
+          "package_name": "com.iotbigdata.fishtank"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZy-3vJo5bLoSigeJqkgO7JS_9XdXjITg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

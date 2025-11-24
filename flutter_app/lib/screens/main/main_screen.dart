@@ -8,10 +8,16 @@ import '../fish/feed_time_picker.dart';
 import '../../widgets/animated_fish.dart';
 import '../../utils/feed_timer_manager.dart';
 import '../fish/decoration_sheet.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+FlutterLocalNotificationsPlugin();
 
 class MainFishTankScreen extends StatefulWidget {
   final String token;
-  final String? sensorToken;   // 🔥 추가
+  final String? sensorToken;
+
 
   const MainFishTankScreen({
     super.key,
@@ -52,6 +58,10 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   @override
   void initState() {
     super.initState();
+
+    initializeLocalNotifications();
+
+    initializeFCM();
 
     if (widget.sensorToken != null) {
       print("📡 로그인 후 센서 토큰 자동 전송: ${widget.sensorToken}");
@@ -206,6 +216,63 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
       print("❌ 센서로 token 전송 실패: $e");
     }
   }
+
+  Future<void> initializeFCM() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // 앱 포그라운드 알림 허용 요청
+    NotificationSettings settings = await messaging.requestPermission();
+    print("알림 권한 상태: ${settings.authorizationStatus}");
+
+    // FCM 토큰 가져오기
+    String? fcmToken = await messaging.getToken();
+    print("FCM Token: $fcmToken");
+
+    if (fcmToken != null) {
+      sendFcmTokenToServer(fcmToken);
+    }
+
+    // 포그라운드 메시지 처리 (앱 열려 있을 때 알림)
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? android = message.notification?.android;
+
+      if (notification != null) {
+        flutterLocalNotificationsPlugin.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'default_channel',
+              '기본 알림',
+              importance: Importance.max,
+              priority: Priority.high,
+            ),
+          ),
+        );
+      }
+    });
+
+  }
+
+  Future<void> sendFcmTokenToServer(String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse("http://192.168.34.17:8080/api/user/fcm"),
+        headers: {
+          "Authorization": "Bearer ${widget.token}",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({"fcmToken": token}),
+      );
+
+      print("FCM 토큰 서버에 저장됨: ${response.statusCode}");
+    } catch (e) {
+      print("FCM 토큰 전송 실패: $e");
+    }
+  }
+
 
 
   // 🎯 꾸미기 아이템별 좌표(비율 기반)
@@ -565,3 +632,16 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   }
 
 }
+
+void initializeLocalNotifications() {
+  const AndroidInitializationSettings initializationSettingsAndroid =
+  AndroidInitializationSettings('@mipmap/launcher_icon');
+
+  const InitializationSettings initializationSettings =
+  InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  flutterLocalNotificationsPlugin.initialize(initializationSettings);
+}
+
