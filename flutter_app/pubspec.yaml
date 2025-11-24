@@ -1,0 +1,101 @@
+name: flutter_app
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  fl_chart: ^1.1.1
+  cupertino_icons: ^1.0.8
+  http: ^1.2.0
+  flutter_local_notifications: ^17.1.2
+  timezone: ^0.9.2
+  permission_handler: ^11.3.0
+  android_intent_plus: ^5.2.0
+  change_app_package_name: ^1.5.0
+  flutter_launcher_icons: ^0.14.4
+  firebase_core: ^3.0.0
+  firebase_messaging: ^15.2.10
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/fish.gif
+    - assets/fish_tank.png
+    - assets/pin_fish.gif
+    - assets/jellyfish.gif
+    - assets/small_fish.gif
+    - assets/pattern_fish.gif
+    - assets/puffer_fish.gif
+    - assets/doolifish.gif
+    - assets/hyung.gif
+    - assets/likability_bar.png
+    - assets/fish_species/구피.png
+    - assets/fish_species/복어.png
+    - assets/fish_species/그린테러.png
+    - assets/fish_species/글라스 캣피쉬.png
+    - assets/fish_species/테트라.png
+    - assets/fish_species/금붕어.png
+    - assets/fish_species/네온 테트라.png
+    - assets/fish_species/비단잉어.png
+    - assets/fish_species/바브.png
+    - assets/fish_species/데마소니.png
+    - assets/fish_species/구라미.png
+    - assets/fish_species/레인보우.png
+    - assets/fish_species/디스커스.png
+    - assets/fish_species/라미레지.png
+    - assets/fish_species/라스보라.png
+    - assets/fish_species/상어.png
+    - assets/fish_species/범블비 고비.png
+    - assets/fish_species/베타.png
+    - assets/fish_species/볼리비안 램.png
+    - assets/fish_species/코리도라스.png
+    - assets/fish_species/플레이코.png
+    - assets/fish_species/블랙 몰리.png
+    - assets/fish_species/블랙 무어.png
+    - assets/fish_species/알지이터.png
+    - assets/fish_species/세베룸.png
+    - assets/fish_species/세일핀 몰리.png
+    - assets/fish_species/소드테일.png
+    - assets/fish_species/실버 달러.png
+    - assets/fish_species/아피스토그램마 보렐리.png
+    - assets/fish_species/아피스토그램마 카카투오이데스.png
+    - assets/fish_species/알텀 엔젤.png
+    - assets/fish_species/엔젤피쉬.png
+    - assets/fish_species/옐로우 랩.png
+    - assets/fish_species/오셀라리스 클라운피쉬.png
+    - assets/fish_species/오스카.png
+    - assets/fish_species/오토싱클루스.png
+    - assets/fish_species/일렉트릭 블루 아카라.png
+    - assets/fish_species/잭댐프시.png
+    - assets/fish_species/다니오.png
+    - assets/fish_species/로치.png
+    - assets/fish_species/카디날 테트라.png
+    - assets/fish_species/크리벤시스.png
+    - assets/fish_species/파이어마우스.png
+    - assets/fish_species/프론토사.png
+    - assets/fish_species/플래티.png
+    - assets/fish_species/피콕 시클리드.png
+    - assets/fish_species/해쳇피쉬.png
+    - assets/fish_species/화이트 클라우드.png
+    - assets/decoration_image/은색왕관.png
+    - assets/decoration_image/금색왕관.png
+    - assets/decoration_image/경찰모자.png
+    - assets/decoration_image/경고표시줄.png
+    - assets/decoration_image/악마뿔2.png
+    - assets/decoration_image/천사링.png
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  image_path: "assets/fish_tank.png"

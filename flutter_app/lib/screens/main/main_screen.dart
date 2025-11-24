@@ -1,0 +1,647 @@
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:async'; // 타이머용
+import '../fish/select_fish_species.dart';
+import '../datagraph/sensor_detail_screen.dart';
+import '../fish/feed_time_picker.dart';
+import '../../widgets/animated_fish.dart';
+import '../../utils/feed_timer_manager.dart';
+import '../fish/decoration_sheet.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+FlutterLocalNotificationsPlugin();
+
+class MainFishTankScreen extends StatefulWidget {
+  final String token;
+  final String? sensorToken;
+
+
+  const MainFishTankScreen({
+    super.key,
+    required this.token,
+    this.sensorToken,
+  });
+
+  @override
+  State<MainFishTankScreen> createState() => _MainFishTankScreenState();
+}
+
+
+class _MainFishTankScreenState extends State<MainFishTankScreen> {
+  double? temperature;
+  double? doValue;
+  double? phValue;
+  bool isLoading = true;
+
+  Duration? remainingTime;
+  Timer? timer;
+  String? feedTimeText;
+
+  late FeedTimerManager feedTimer;
+
+  String? sensorToken;
+
+  bool tempAlert = false;
+  bool doAlert = false;
+  bool phAlert = false;
+
+  int? likability;
+
+  // ✅ 꾸미기 선택 상태 추가
+  String? selectedDecoration;
+
+  Timer? refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    initializeLocalNotifications();
+
+    initializeFCM();
+
+    if (widget.sensorToken != null) {
+      print("📡 로그인 후 센서 토큰 자동 전송: ${widget.sensorToken}");
+      sendTokenToSensor(widget.sensorToken!);
+    } else {
+      print("⚠ 로그인 응답에 센서 토큰 없음");
+    }
+
+    fetchSensorData();
+
+    // FeedTimer 초기화
+    feedTimer = FeedTimerManager(
+      context: context,
+      onTimeUpdate: () {
+        setState(() {
+          if (feedTimer.remainingTime != null)
+            feedTimeText = feedTimer.formatDuration(feedTimer.remainingTime!);
+        });
+      },
+    );
+
+    bool isFetching = false;
+
+    refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) async {
+      if (isFetching) return;
+      isFetching = true;
+
+      await fetchSensorData();
+
+      isFetching = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    refreshTimer?.cancel();
+    feedTimer.dispose();
+    super.dispose();
+  }
+
+  Future<void> fetchSensorData() async {
+    try {
+      final response = await http.get(
+        // Uri.parse("https://jwejweiya.shop/api/sensor/main"),
+        Uri.parse("http://192.168.34.17:8080/api/sensor/main"),
+        headers: {
+          "Authorization": "Bearer ${widget.token}",
+          "Content-Type": "application/json",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final status = data["status"];
+        final sensor = data["data"];
+        likability = data["likability"];
+
+        if (sensor != null) {
+          setState(() {
+            temperature = (sensor["temperature"]["value"] ?? 0).toDouble();
+            doValue = (sensor["dissolvedOxygen"]["value"] ?? 0).toDouble();
+            phValue = (sensor["tds"]["value"] ?? 0).toDouble();
+          });
+        }
+
+        if (status == "OK" || status == "WARNING") {
+          final abnormalItems = List<String>.from(data["abnormalItems"] ?? []);
+          setState(() {
+            tempAlert = abnormalItems.contains("temperature");
+            doAlert = abnormalItems.contains("dissolvedOxygen");
+            phAlert = abnormalItems.contains("tds");
+            isLoading = false;
+          });
+        } else if (status == "NO_FISH_TYPE") {
+          final msg = data["message"] ?? "어종 정보가 없습니다. 먼저 어종을 등록해주세요.";
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: Colors.blueAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          setState(() => isLoading = false);
+        } else if (status == "NO_SENSOR_DATA") {
+          final msg = data["message"] ?? "센서 데이터가 존재하지 않습니다.";
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(msg),
+              backgroundColor: Colors.orangeAccent,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+
+          final deviceResponse = await http.post(
+            // Uri.parse("https://jwejweiya.shop/api/device/register"),
+            Uri.parse("http://192.168.34.17:8080/api/device/register"),
+            headers: {
+              "Authorization": "Bearer ${widget.token}",
+              "Content-Type": "application/json",
+            },
+          );
+
+          if (deviceResponse.statusCode == 200) {
+            final deviceData = jsonDecode(deviceResponse.body);
+
+            setState(() {
+              sensorToken = deviceData["sensorToken"] ?? deviceData["token"];
+            });
+
+            if (sensorToken != null) {
+              await sendTokenToSensor(sensorToken!);
+            }
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("✅ 센서 디바이스 자동 등록 완료"),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            setState(() => isLoading = true);
+          }
+        } else {
+          setState(() => isLoading = false);
+        }
+      } else {
+        print("서버 응답 오류: ${response.statusCode}");
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      print("API 요청 오류: $e");
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> sendTokenToSensor(String token) async {
+    try {
+      // 라즈베리파이의 IP 주소
+      final sensorUrl = Uri.parse("http://192.168.0.120/setToken");
+
+      final response = await http.post(
+        sensorUrl,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"sensorToken": token}),
+      );
+
+      print("📡 센서로 token 전송 완료: ${response.statusCode} / ${response.body}");
+    } catch (e) {
+      print("❌ 센서로 token 전송 실패: $e");
+    }
+  }
+
+  Future<void> initializeFCM() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+    // 앱 포그라운드 알림 허용 요청
+    NotificationSettings settings = await messaging.requestPermission();
+    print("알림 권한 상태: ${settings.authorizationStatus}");
+
+    // FCM 토큰 가져오기
+    String? fcmToken = await messaging.getToken();
+    print("FCM Token: $fcmToken");
+
+    if (fcmToken != null) {
+      sendFcmTokenToServer(fcmToken);
+    }
+
+    // 포그라운드 메시지 처리 (앱 열려 있을 때 알림)
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      RemoteNotification? notification = message.notification;
+      AndroidNotification? android = message.notification?.android;
+
+      if (notification != null) {
+        flutterLocalNotificationsPlugin.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'default_channel',
+              '기본 알림',
+              importance: Importance.max,
+              priority: Priority.high,
+            ),
+          ),
+        );
+      }
+    });
+
+  }
+
+  Future<void> sendFcmTokenToServer(String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse("http://192.168.34.17:8080/api/user/fcm"),
+        headers: {
+          "Authorization": "Bearer ${widget.token}",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({"fcmToken": token}),
+      );
+
+      print("FCM 토큰 서버에 저장됨: ${response.statusCode}");
+    } catch (e) {
+      print("FCM 토큰 전송 실패: $e");
+    }
+  }
+
+
+
+  // 🎯 꾸미기 아이템별 좌표(비율 기반)
+  Offset getDecorationPosition(String imagePath, double sw, double sh) {
+    if (imagePath.contains("은색왕관") || imagePath.contains("금색왕관")) {
+      return Offset(sw * 0.29, sh * 0.265); // 머리 위
+    } else if (imagePath.contains("천사링")) {
+      return Offset(sw * 0.40, sh * 0.20);
+    } else if (imagePath.contains("악마뿔")) {
+      return Offset(sw * 0.33, sh * 0.25);
+    } else if (imagePath.contains("경고표시줄")) {
+      return Offset(sw * 0.20, sh * 0.28); // 어항 하단
+    } else {
+      return Offset(sw * 0.40, sh * 0.40); // 기본값
+    }
+  }
+
+// 🎯 꾸미기 아이템별 크기(비율 기반)
+  Size getDecorationSize(String imagePath, double sw) {
+    if (imagePath.contains("은색왕관") || imagePath.contains("금색왕관")) {
+      return Size(sw * 0.18, sw * 0.18);
+    } else if (imagePath.contains("천사링")) {
+      return Size(sw * 0.22, sw * 0.24);
+    } else if (imagePath.contains("악마뿔")) {
+      return Size(sw * 0.20, sw * 0.18);
+    } else if (imagePath.contains("경고표시줄")) {
+      return Size(sw * 0.60, sw * 0.50);
+    } else {
+      return Size(sw * 0.20, sw * 0.20);
+    }
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    final sw = MediaQuery.of(context).size.width;
+    final sh = MediaQuery.of(context).size.height;
+    final base = sw < sh ? sw : sh;
+    final fishWidth = (base * 0.80).clamp(120.0, 280.0);
+    final fishHeight = fishWidth * 0.75;
+    final horizontalPadding = (sw * 0.03).clamp(8.0, 24.0);
+    final verticalPadding = (sh * 0.012).clamp(6.0, 16.0);
+
+    return Scaffold(
+      body: SafeArea(
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF00BCD4),
+                Color(0xFF2196F3),
+                Color(0xFF006064),
+              ],
+            ),
+          ),
+          child: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // ✅ 상단 수질 데이터
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  vertical: verticalPadding,
+                  horizontal: horizontalPadding,
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: _buildDataBox(
+                              "DO: ${doValue?.toStringAsFixed(2) ?? '--'}",
+                              isAlert: doAlert,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: sw * 0.02),
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: _buildDataBox(
+                              "TDS: ${phValue?.toStringAsFixed(2) ?? '--'}",
+                              isAlert: phAlert,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: sw * 0.02),
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: _buildDataBox(
+                              "${temperature?.toStringAsFixed(2) ?? '--'}°C",
+                              isAlert: tempAlert,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+
+                    // ❤️ 호감도 바
+                    if (likability != null)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: _buildLikabilityBar(likability!),
+                      ),
+                    if (feedTimeText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '사료 배식 시간: $feedTimeText',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // 🐠 중앙 물고기 영역
+              Expanded(
+                child: SizedBox.expand(
+                  child: Stack(
+                    children: [
+                      Align(
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: fishWidth,
+                          height: fishHeight,
+                          child: Image.asset(
+                            'assets/pin_fish.gif',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      AnimatedFish(
+                        asset: 'assets/fish.gif',
+                        alignment: const Alignment(0.3, -1),
+                        size: 150,
+                        duration: const Duration(seconds: 7),
+                        flipHorizontally: true,
+                      ),
+                      AnimatedFish(
+                        asset: 'assets/small_fish.gif',
+                        alignment: const Alignment(-0.7, -0.5),
+                        size: 150,
+                        duration: const Duration(seconds: 4),
+                      ),
+                      AnimatedFish(
+                        asset: 'assets/pattern_fish.gif',
+                        alignment: const Alignment(0.85, -0.6),
+                        size: 150,
+                        duration: const Duration(seconds: 5),
+                        flipHorizontally: true,
+                      ),
+                      AnimatedFish(
+                        asset: 'assets/jellyfish.gif',
+                        alignment: const Alignment(0.7, 0.5),
+                        size: 150,
+                        duration: const Duration(seconds: 6),
+                        flipHorizontally: true,
+                      ),
+                      AnimatedFish(
+                        asset: 'assets/puffer_fish.gif',
+                        alignment: const Alignment(-0.6, 0.8),
+                        size: 180,
+                        duration: const Duration(seconds: 5),
+                        flipHorizontally: true,
+                      ),
+
+                      // 기존 Align 삭제하고 아래 코드로 교체
+                      if (selectedDecoration != null)
+                        Builder(
+                          builder: (context) {
+                            final pos = getDecorationPosition(selectedDecoration!, sw, sh);
+                            final size = getDecorationSize(selectedDecoration!, sw);
+                            return Positioned(
+                              left: pos.dx,
+                              top: pos.dy,
+                              child: Image.asset(
+                                selectedDecoration!,
+                                width: size.width,
+                                height: size.height,
+                                fit: BoxFit.contain,
+                              ),
+                            );
+                          },
+                        ),
+
+                    ],
+                  ),
+                ),
+              ),
+
+              // 하단 버튼
+              Padding(
+                padding: const EdgeInsets.only(bottom: 1),
+                child: SizedBox(
+                  height: 130,
+                  child: GridView.count(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    childAspectRatio: 3.8,
+                    children: [
+                      _buildMenuButton("꾸미기", Icons.brush),
+                      _buildMenuButton("어종 선택", Icons.pets),
+                      _buildMenuButton("센서 데이터", Icons.sensors),
+                      _buildMenuButton("사료 배식 시간", Icons.alarm),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 🔹 데이터 박스
+  Widget _buildDataBox(String label, {bool isAlert = false}) {
+    return Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: isAlert
+            ? Colors.redAccent.withOpacity(0.85)
+            : Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isAlert ? Colors.red : Colors.black38,
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(1, 2),
+          ),
+        ],
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isAlert ? Colors.white : Colors.black87,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 🔹 하단 버튼
+  Widget _buildMenuButton(String label, IconData icon) {
+    return ElevatedButton.icon(
+      onPressed: () async {
+        if (label == "꾸미기") {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => DecorationSheet(
+              currentDecoration: selectedDecoration,
+              userLikability: likability ?? 0,
+              onDecorationSelected: (String? selected) {
+                setState(() {
+                  selectedDecoration = selected;
+                });
+              },
+            ),
+          );
+        } else if (label == "어종 선택") {
+          showFishSelectionSheet(context, widget.token);
+        } else if (label == "센서 데이터") {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SensorDetailScreen(token: widget.token),
+            ),
+          );
+        } else if (label == "사료 배식 시간") {
+          final selected = await showFeedTimePicker(context);
+          if (selected != null) {
+            final match = RegExp(r'(\d+)시간 (\d+)분').firstMatch(selected);
+            if (match != null) {
+              final hours = int.parse(match.group(1)!);
+              final minutes = int.parse(match.group(2)!);
+
+              setState(() {
+                feedTimeText = "$hours시간 $minutes분"; // 화면 즉시 갱신
+              });
+
+              feedTimer.startCountdown(Duration(hours: hours, minutes: minutes));
+            }
+          }
+        }
+      },
+      icon: Icon(icon, size: 20),
+      label: Text(
+        label,
+        style:
+        const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        padding:
+        const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+          side: const BorderSide(color: Colors.black26),
+        ),
+      ),
+    );
+  }
+
+  // 호감도 박스
+  Widget _buildLikabilityBar(int value) {
+    return Stack(
+      alignment: Alignment.centerLeft,
+      children: [
+        Image.asset(
+          "assets/likability_bar.png",
+          width: 160, // 필요하면 조절
+        ),
+        Positioned(
+          left: 70, // 텍스트가 흰색 영역 안에 딱 들어가도록 조절
+          child: Text(
+            "$value",
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+}
+
+void initializeLocalNotifications() {
+  const AndroidInitializationSettings initializationSettingsAndroid =
+  AndroidInitializationSettings('@mipmap/launcher_icon');
+
+  const InitializationSettings initializationSettings =
+  InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  flutterLocalNotificationsPlugin.initialize(initializationSettings);
+}
+
