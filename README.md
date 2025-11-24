@@ -54,6 +54,7 @@ backend/
     │   ├── java
     │   │   └── com.iotbigdata.fishtankproject
     │   │       ├── config/
+    |   |       |   ├── FirebaseConfig.java
     │   │       │   └── SecurityConfig.java
     │   │       │
     │   │       ├── controller/
@@ -94,6 +95,7 @@ backend/
     │   │       │   └── JwtTokenProvider.java
     │   │       │
     │   │       └── service/
+    |   |           ├── FcmService.java
     │   │           ├── LoginService.java
     │   │           ├── UserService.java
     │   │           ├── FishService.java
