@@ -43,7 +43,7 @@
 | **IDE / Tool** | IntelliJ IDEA, Android Studio, GitHub, Postman |
 
 ## 시스템 아키텍쳐
-<img src="./SystemArchitecture2.png" width="100%" />
+<img src="./SystemArchitecture2.PNG" width="100%" />
 
 ## 프로젝트 구조
 ### 1. Backend
