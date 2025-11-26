@@ -5,6 +5,8 @@ class FeedTimerManager {
   Duration? remainingTime;
   Timer? timer;
   String? feedTimeText;
+  Duration? initialDuration;
+
 
   final VoidCallback onTimeUpdate; // UI 업데이트 콜백
   final BuildContext context;
@@ -30,6 +32,7 @@ class FeedTimerManager {
   // ✅ 카운트다운 시작
   void startCountdown(Duration duration) {
     timer?.cancel();
+    initialDuration = duration;
     remainingTime = duration;
     onTimeUpdate();
 
@@ -55,12 +58,9 @@ class FeedTimerManager {
       ),
     );
 
-    // TODO: 자동 배식 제어 로직 (ex: Spring Boot → Raspberry Pi)
-    // ex) await http.post("$baseUrl/api/feeder/start")
-
-    Future.delayed(const Duration(seconds: 3), () {
-      startCountdown(const Duration(minutes: 1)); // 1분 자동 재시작
-    });
+    if (initialDuration != null) {
+      startCountdown(initialDuration!);
+    }
   }
 
   // ✅ 종료
