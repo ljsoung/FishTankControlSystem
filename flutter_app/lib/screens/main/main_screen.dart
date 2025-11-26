@@ -202,8 +202,8 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
 
   Future<void> sendTokenToSensor(String token) async {
     try {
-      // 라즈베리파이의 IP 주소
-      final sensorUrl = Uri.parse("http://192.168.0.120/setToken");
+      // ESP의 IP 주소
+      final sensorUrl = Uri.parse("http://192.168.0.142/setToken");
 
       final response = await http.post(
         sensorUrl,
