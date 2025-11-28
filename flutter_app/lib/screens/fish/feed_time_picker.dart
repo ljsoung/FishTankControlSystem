@@ -44,7 +44,7 @@ Future<String?> showFeedTimePicker(BuildContext context) async {
                       '${minutes.toString().padLeft(2, '0')}분 후';
 
                   // ESP IP 주소
-                  const espIp = "http://192.168.0.142/feedTime";
+                  const espIp = "http://172.18.12.233/feedTime";
 
                   // ESP로 POST 전송
                   await http.post(
