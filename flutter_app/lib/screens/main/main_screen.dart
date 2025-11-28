@@ -259,7 +259,7 @@ class _MainFishTankScreenState extends State<MainFishTankScreen> {
   Future<void> sendFcmTokenToServer(String token) async {
     try {
       final response = await http.post(
-        Uri.parse("http://192.168.34.17:8080/api/user/fcm"),
+        Uri.parse("https://jwejweiya.shop/api/user/fcm"),
         headers: {
           "Authorization": "Bearer ${widget.token}",
           "Content-Type": "application/json",
