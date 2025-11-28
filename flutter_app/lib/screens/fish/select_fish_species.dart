@@ -161,8 +161,8 @@ Widget _buildFishChoiceButton(
     onTap: () async {
       Navigator.pop(context);
 
-      // final url = "https://jwejweiya.shop/api/fish/select?fishType=$name";
-      final url = "http://192.168.34.17:8080/api/fish/select?fishType=$name";
+      final url = "https://jwejweiya.shop/api/fish/select?fishType=$name";
+      // final url = "http://192.168.34.17:8080/api/fish/select?fishType=$name";
 
       try {
         final response = await http.post(
