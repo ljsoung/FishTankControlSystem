@@ -31,7 +31,7 @@
 ## 기술 스택
 | 구분 | 기술 스택 |
 |------|-----------|
-| **언어** | Java(Spring Boot), Dart(Flutter), Python |
+| **언어** | Java(Spring Boot), Dart(Flutter), Python, Arduino |
 | **모바일 앱** | Flutter, HTTP 통신, Custom UI/Widget |
 | **백엔드** | Spring Boot 3.5.7, JPA, Spring Security(JWT), Lombok, Gradle |
 | **API 연동** | REST API(JSON), Postman 테스트 |
