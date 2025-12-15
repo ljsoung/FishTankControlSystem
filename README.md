@@ -1,4 +1,4 @@
-<img width="751" height="98" alt="image" src="https://github.com/user-attachments/assets/ffa70a8c-ad38-4520-9b9f-79aec847dc4f" />﻿# 어항 관리 지원 서비스앱 README
+﻿# 어항 관리 지원 서비스앱 README
 <img width="2880" height="1619" alt="undefined-" src="https://github.com/user-attachments/assets/6507453b-c320-43f1-ba62-026beeba6a26" />
 
 ## 프로젝트 소개
