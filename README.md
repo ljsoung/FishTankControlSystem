@@ -1,4 +1,4 @@
-﻿# 어항 관리 지원 서비스앱 README
+<img width="751" height="98" alt="image" src="https://github.com/user-attachments/assets/ffa70a8c-ad38-4520-9b9f-79aec847dc4f" />﻿# 어항 관리 지원 서비스앱 README
 <img width="2880" height="1619" alt="undefined-" src="https://github.com/user-attachments/assets/6507453b-c320-43f1-ba62-026beeba6a26" />
 
 ## 프로젝트 소개
@@ -187,6 +187,31 @@ flutter_app/
    - APK 추출
   
 ### 🐟 이승준
+ - **Project Manage**
+   - 요구사항 정리 및 우선순위 조정
+   - 스마트어항 필요성 및 센서·하드웨어 조사
+   - 센서 및 하드웨어 선정
+   - 핵심 기능 범위 확정
+   - 전체 시스템 아키텍처 설계
+   - 워크플로우 및 구조 문서화
+   - 애자일 단계 확립
+   - 앱 UI 구조·화면 흐름 설계 및 구현
+     
+ - **Frontend**
+   - 로그인 성공 시 메인화면 이동 구현 
+   - 메인화면 UI 구현
+   - 센서 데이터 시각화 기능 설계 및 구현
+   - 앱 프론트 코드 영역 리팩토링
+  
+ - **IoT Hardware & Communication**
+   - ESP8266 펌웨어 구현
+   - 하드웨어-앱-서버 데이터 전송 구조 설계
+   - 사료 배식시간 설정 기능의 네트워크 연동 구현
+   - 자동 배식기 제작/구성
+   - SEN0237(용존산소), DS18B20(수온), SEN0244(TDS), SG-90 센서 테스트
+   - 센서 모듈 설치 및 동작 환경 구축
+   - 통신 안정화를 위한 파이프라인 구축
+   - 네트워크 및 통신 이슈 분석·개선
 
 ### 🐡 유희수
  - **Frontend**
