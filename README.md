@@ -31,7 +31,7 @@
 ## 기술 스택
 | 구분 | 기술 스택 |
 |------|-----------|
-| **언어** | Java(Spring Boot), Dart(Flutter), Python, Arduino |
+| **언어** | Java(Spring Boot), Dart(Flutter), C |
 | **모바일 앱** | Flutter, HTTP 통신, Custom UI/Widget |
 | **백엔드** | Spring Boot 3.5.7, JPA, Spring Security(JWT), Lombok, Gradle |
 | **API 연동** | REST API(JSON), Postman 테스트 |
@@ -243,8 +243,6 @@ flutter_app/
  - Github로 코드 작성 후 Commit/Push하여 진행 상황 공유
  - 매일 1~2시간 가량 진도 체크 및 개발 진행
 
-## 프로젝트 진행 중 이슈
-TODO
 ## 앱 기능
 ### 1. 사용자 인증
  - JWT를 활용하여 안전하게 로그인이 가능하도록 구현
